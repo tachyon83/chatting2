@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        div#chat_rooms {
+            border: 1px solid orange;
+            width: 300px;
+            height: 300px;
+            overflow-y: scroll;
+        }
+    </style>
+    <!-- <script src="http://code.jquery.com/jquery.js"></script> -->
+    <script src="../js/jquery.min.js"></script>
+</head>
+
+<body>
+    <div id='chat_rooms'></div>
+    <button type="button">Join</button>
+    <button type="button">Create a new room</button>
+
+    <script>
+        var chatRooms = document.getElementById('chat_rooms');
+        var name = null;
+        var sz = 0;
+        var URL = 'http://localhost:3000/chatRooms/';
+        setInterval(function () {
+            $.get(URL, function (data, status) {
+                if (data != '' && status == 'success') {
+                    var rooms = JSON.parse(data);
+                    chatRooms.innerHTML = '';
+                    for (var room of rooms) {
+                        var p = document.createElement('p');
+                        var title = document.createElement('span');
+                        var capacity = document.createElement('span');
+                        title.innerText = room.title;
+                        capacity.innerText = room.capacity;
+                        p.appendChild(title);
+                        p.appendChild(capacity);
+                        chatRooms.innerHTML += p;
+                    }
+                }
+            })
+        }, 1000);
+    </script>
+</body>
+
+</html>

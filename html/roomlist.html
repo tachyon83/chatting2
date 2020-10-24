@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>signin</title>
+    <style>
+        .room {
+            border: 1px solid dodgerblue;
+        }
+
+        ::selection {
+            border: 2px solid orange
+        }
+    </style>
+    <script src='/socket.io/socket.io.js'></script>
+    <script>
+        var selectedRoomID;
+        // var refreshCallURL = '/room/list';
+
+        function roomListRefresher(roomsInfoFromServer) {
+            var roomListDiv = document.getElementById('roomList');
+            // roomsInfoFromServer.array.forEach(element => {
+            roomsInfoFromServer.forEach(element => {
+                var temp = document.getElementById(element.roomID);
+                if (temp != null) {
+                    temp.innerText = JSON.stringify(element);
+                } else {
+                    var newRoom = document.createElement('p');
+                    newRoom.className = 'room';
+                    newRoom.id = element.roomID;
+                    newRoom.addEventListener('click', () => {
+                        selectedRoomID = this.roomID;
+                    })
+                    newRoom.addEventListener('dblclick', () => {
+                        var socket = io();
+                        socket.emit('room.join', this.id);
+                        location.href = "/chat.html";
+                    })
+                    newRoom.innerText = JSON.stringify(element);
+                    roomListDiv.appendChild(newRoom);
+                }
+            });
+        }
+        function roomListRefreshServerCall(url, callback) {
+            // var xhr = new XMLHttpRequest();
+            // xhr.open("GET", url, true);
+            // xhr.send();
+            // xhr.onload = function () {
+            //     if (this.status == 200) {
+            //         callback(JSON.parse(xhr.responseText).rooms);
+            //     }
+            // };
+
+
+        }
+
+        window.onload = function () {
+            var socket = io();
+            console.log('pID in roomlist', socket.pID);
+            // const urlParams = new URLSearchParams(window.location.search);
+            // const mypID = urlParams.get('pID');
+
+            setTimeout(roomListRefreshServerCall(refreshCallURL, roomListRefresher), 500);
+            // var refreshBtn = document.getElementById('refresh');
+            // refreshBtn.addEventListener('click', () => {
+            //     roomListRefreshServerCall(refreshCallURL, roomListRefresher);
+            // })
+
+            // var joinBtn = document.getElementById('join');
+            // joinBtn.addEventListener('click', () => {
+            //     location.href = "/room/join/" + selectedRoomID + "/" + mypID;
+            // })
+        }
+    </script>
+</head>
+
+<body>
+    <div id="roomList">
+    </div>
+    <!-- <button id="refresh">refresh</button> -->
+    <!-- <button id="join">join</button> -->
+</body>
+
+</html>

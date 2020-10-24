@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chat_index.html</title>
+    <style>
+        .room {
+            border: 1px solid dodgerblue;
+        }
+
+        ::selection {
+            border: 2px solid orange
+        }
+
+        div#chatLog {
+            height: 200px;
+        }
+    </style>
+    <script>
+        // var selectedRoomID;
+        // var socket = io();
+
+        window.onload = function () {
+            // socket = io();
+        }
+
+        // window.onload = function () {
+        //     var socket = io();
+
+        //     // const urlParams = new URLSearchParams(window.location.search);
+        //     // const mypID = urlParams.get('pID');
+
+
+        //     // var refreshBtn = document.getElementById('refresh');
+        //     // refreshBtn.addEventListener('click', () => {
+        //     //     roomListRefreshServerCall(refreshCallURL, roomListRefresher);
+        //     // })
+
+        //     // var joinBtn = document.getElementById('join');
+        //     // joinBtn.addEventListener('click', () => {
+        //     //     location.href = "/room/join/" + selectedRoomID + "/" + mypID;
+        //     // })
+        // }
+    </script>
+</head>
+
+<body>
+    <!-- <form onsubmit="event.preventDefault();" id="signin" action="/profile/signin" method="post"> -->
+    <!-- <form id="signin" action="/profile/signin" method="post">
+        ID<input id="pID" name="pID" type="text">
+        PW<input id="pPW" name="pPW" type="password">
+        Nick<input id="pNick" name="pNick" type="text">
+        <button id="signinBtn" type="submit">Sign In</button>
+    </form> -->
+    <div id="roomList"></div>
+    <div id='chatLog'></div>
+    <script src='/socket.io/socket.io.js'></script>
+    <script>
+        var socket = io();
+        // console.log(socket);
+        var profileDTO;
+        // var roomDTO;
+
+        // console.log('pID in roomlist', socket.pID);
+        setInterval(() => { roomListRefreshServerCall(roomListRefresher) }, 500);
+        // var signinDiv = document.getElementById('signin');
+        // var signinBtn = document.getElementById("signinBtn");
+        // var chatLogDiv = document.getElementById('chatLog');
+
+        // signinBtn.addEventListener('click', (e) => {
+        //     e.target.preventDefault();
+
+        //     profileDTO = {
+        //         pID: document.getElementById('pID').value,
+        //         pPW: document.getElementById('pPW').value,
+        //         pNick: document.getElementById('pNick').value,
+        //         pGroup: null,
+        //         pRoomID: null,
+        //     }
+        //     // socket.emit('profile.signin', profileDTO);
+        //     // socket.on('profile.response', result => {
+        //     //     console.log(result)
+        //     //     if (result) signinDiv.style.backgroundColor = "yellow";
+        //     // });
+        //     // document.getElementById('signin').submit();
+
+        //     var xhr = new XMLHttpRequest();
+        //     const url = '/profile/signin';
+        //     xhr.open("POST", url, true);
+        //     xhr.send({data:profileDTO});
+        //     xhr.onload = function () {
+        //         if (this.status == 200) {
+        //             // callback(JSON.parse(xhr.responseText).rooms);
+        //             signinDivColorChanger(xhr.response)
+        //         }
+        //     };
+        //     let signinDivColorChanger = (result) => {
+        //         if (result) sign.style.backgroundColor = "yellow";
+        //     }
+        // })
+
+        socket.on('someone.joined', () => {
+            var msg = document.createElement('p');
+            msg.innerHTML = 'someone joined';
+            chatLogDiv.appendChild(msg);
+        })
+
+        function roomListRefresher(rooms) {
+            // console.log('roomListRefresher called')
+            var roomListDiv = document.getElementById('roomList');
+
+            for (var key of Object.keys(rooms)) {
+                // console.log('for-loop', key);
+                var temp = document.getElementById(key);
+                if (temp != null) {
+                    temp.innerText = JSON.stringify(rooms[key]);
+                    // console.log('changed')
+                } else {
+                    let newRoom = document.createElement('p');
+                    newRoom.className = 'room';
+                    newRoom.id = key
+                    // newRoom.addEventListener('click', () => {
+                    //     selectedRoomID = this.roomID
+                    // making a change just to...(github)
+                    // })
+                    newRoom.addEventListener("dblclick", () => {
+                        // console.log(key);
+                        const roomDTO = rooms[newRoom.id];
+                        socket.emit('room.join', roomDTO);
+                        socket.on('room.response', result => {
+                            // console.log('result upon dblclick', result)
+                            if (result) chatLogDiv.style.backgroundColor = "dodgerblue";
+                        })
+                    })
+                    newRoom.innerText = JSON.stringify(rooms[key]);
+                    roomListDiv.appendChild(newRoom);
+                }
+            }
+        }
+        function roomListRefreshServerCall(callback) {
+            // console.log('refresher server called')
+            socket.emit('room.list');
+            socket.on('room.list.response', rooms => {
+                callback(rooms);
+            })
+            // var xhr = new XMLHttpRequest();
+            // xhr.open("GET", url, true);
+            // xhr.send();
+            // xhr.onload = function () {
+            //     if (this.status == 200) {
+            //         callback(JSON.parse(xhr.responseText).rooms);
+            //     }
+            // };
+        }
+    </script>
+</body>
+
+</html>
