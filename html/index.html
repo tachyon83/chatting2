@@ -18,98 +18,75 @@
             width: 400px;
             height: 200px;
         }
+
+        div#chatpad {
+            display: none;
+        }
     </style>
     <script>
         // window.onload = function () {
         //     var socket = io();
-
         //     // const urlParams = new URLSearchParams(window.location.search);
         //     // const mypID = urlParams.get('pID');
-
-
-        //     // var refreshBtn = document.getElementById('refresh');
-        //     // refreshBtn.addEventListener('click', () => {
-        //     //     roomListRefreshServerCall(refreshCallURL, roomListRefresher);
-        //     // })
-
-        //     // var joinBtn = document.getElementById('join');
-        //     // joinBtn.addEventListener('click', () => {
-        //     //     location.href = "/room/join/" + selectedRoomID + "/" + mypID;
-        //     // })
-        // }
     </script>
 </head>
 
 <body>
     <div id="roomList"></div>
     <div id='chatLog'></div>
+    <div id='chatPad'>
+        <textarea id='chatText'></textarea>
+        <button id='chatBtn'>send</button>
+        <button id='roomLeave'>leave</button>
+    </div>
     <script src='/socket.io/socket.io.js'></script>
     <script>
         var socket = io();
-        // console.log(socket);
         var profileDTO = null;
+        var userId = null;
+        var rooms = null;
         // var roomDTO;
-
-        // console.log('pID in roomlist', socket.pID);
-        setInterval(() => { roomListRefreshServerCall(roomListRefresher) }, 500);
-        // var signinDiv = document.getElementById('signin');
-        // var signinBtn = document.getElementById("signinBtn");
         var chatLogDiv = document.getElementById('chatLog');
+        var roomListDiv = document.getElementById('roomList');
+        var chatPadDiv = document.getElementById('chatPad');
+        var chatText = document.getElementById('chatText');
+        var chatBtn = document.getElementById('chatBtn');
+        var roomLeave = document.getElementById('roomLeave');
 
-        // signinBtn.addEventListener('click', (e) => {
-        //     e.target.preventDefault();
+        chatBtn.addEventListener('click', () => {
+            var chatDTO = {
+                from: userId,
+                to: null,
+                text: chatText.value,
+            }
+            chatText.value = ''
+            socket.emit('chat.public', chatDTO);
+        })
+        roomLeave.addEventListener('click', () => {
+            // socket.emit('room.leave');
 
-        //     profileDTO = {
-        //         pID: document.getElementById('pID').value,
-        //         pPW: document.getElementById('pPW').value,
-        //         pNick: document.getElementById('pNick').value,
-        //         pGroup: null,
-        //         pRoomID: null,
-        //     }
-        //     // socket.emit('profile.signin', profileDTO);
-        //     // socket.on('profile.response', result => {
-        //     //     console.log(result)
-        //     //     if (result) signinDiv.style.backgroundColor = "yellow";
-        //     // });
-        //     // document.getElementById('signin').submit();
+        })
 
-        //     var xhr = new XMLHttpRequest();
-        //     const url = '/profile/signin';
-        //     xhr.open("POST", url, true);
-        //     xhr.send({data:profileDTO});
-        //     xhr.onload = function () {
-        //         if (this.status == 200) {
-        //             // callback(JSON.parse(xhr.responseText).rooms);
-        //             signinDivColorChanger(xhr.response)
-        //         }
-        //     };
-        //     let signinDivColorChanger = (result) => {
-        //         if (result) sign.style.backgroundColor = "yellow";
-        //     }
-        // })
+        function roomListRefreshServerCall(callback) {
+            socket.emit('room.list');
+            socket.on('room.list.response', roomsFromServer => {
+                rooms = roomsFromServer
+                callback(rooms);
+            })
+        }
+
+        setInterval(() => { roomListRefreshServerCall(roomListRefresher) }, 500);
 
         function roomListRefresher(rooms) {
-            // console.log('roomListRefresher called')
-            var roomListDiv = document.getElementById('roomList');
-
             for (var key of Object.keys(rooms)) {
-                // console.log('for-loop', key);
                 var temp = document.getElementById(key);
-                if (temp != null) {
-                    // console.log('temp is not null')
-                    temp.innerText = JSON.stringify(rooms[key]);
-                    // console.log('changed')
-                } else {
-                    console.log('new element created')
+                if (temp != null) temp.innerText = JSON.stringify(rooms[key]);
+                else {
                     let newRoom = document.createElement('p');
                     newRoom.className = 'room';
                     newRoom.id = key
-                    // newRoom.addEventListener('click', () => {
-                    //     selectedRoomID = this.roomID
-                    // making a change just to...(github)
-                    // })
-                    newRoom.addEventListener("click", () => {
-                        // console.log(key);
+
+                    newRoom.addEventListener("dblclick", () => {
                         const roomDTO = rooms[newRoom.id];
                         socket.emit('room.join', roomDTO);
                     })
@@ -118,30 +95,26 @@
                 }
             }
         }
-        function roomListRefreshServerCall(callback) {
-            // console.log('refresher server called')
-            socket.emit('room.list');
-            socket.on('room.list.response', rooms => {
-                callback(rooms);
-            })
-            // var xhr = new XMLHttpRequest();
-            // xhr.open("GET", url, true);
-            // xhr.send();
-            // xhr.onload = function () {
-            //     if (this.status == 200) {
-            //         callback(JSON.parse(xhr.responseText).rooms);
-            //     }
-            // };
-        }
-        socket.on('room.join.response', result => {
-            console.log('room.join.response received')
-            // console.log('result upon dblclick', result)
-            if (result) chatLogDiv.style.backgroundColor = "dodgerblue";
+
+        socket.on('room.join.response', ok => {
+            if (ok) {
+                chatLogDiv.style.backgroundColor = "aliceblue";
+                roomListDiv.style.display = "none";
+                chatPadDiv.style.display = "visible";
+            }
         })
-        socket.on('newbie', person => {
-            console.log('newbie received');
+        // socket.on('system.invite', profileDTO => {
+        socket.on('system.invite', id => {
+            console.log('system invited')
+            // userId = profileDTO.id
+            userId = id
             var temp = document.createElement('p');
-            temp.innerText = person + ' joined';
+            temp.innerText = id + ' joined';
+            chatLogDiv.appendChild(temp);
+        })
+        socket.on('chat.public', chatDTO => {
+            var temp = document.createElement('p');
+            temp.innerText = chatDTO.from + ': ' + chatDTO.text;
             chatLogDiv.appendChild(temp);
         })
     </script>
