@@ -99,34 +99,35 @@ async function dbpoolCreater() {
 }
 dbpoolCreater();
 
-const sql_comparePW = "select pPW from usertable where pID= ?;"
-function sqlHandler(id, pw) {
-    return new Promise((resolve, reject) => {
-        dbpool.getConnection((err, conn) => {
-            if (err) {
-                if (conn) conn.release();
-                console.log('ERR: getConnection in sqlHandler');
-                return;
-            }
-            conn.query(sql_comparePW, [id], (error, rows, fields) => {
-                if (error) {
-                    if (conn) conn.release();
-                    reject(error);
-                    return;
-                }
-                var ret = false;
-                // if (rows[0].pPW == pw) ret = rows[0];
-                if (rows[0].pPW == pw) ret = true;
-                resolve(ret);
-            })
-        })
-    })
-}
-async function pwChecker(id, pw) {
-    return await sqlHandler(id, pw);
-}
+// const sql_comparePW = "select pPW from usertable where pID= ?;"
+// function sqlHandler(id, pw) {
+//     return new Promise((resolve, reject) => {
+//         dbpool.getConnection((err, conn) => {
+//             if (err) {
+//                 if (conn) conn.release();
+//                 console.log('ERR: getConnection in sqlHandler');
+//                 return;
+//             }
+//             conn.query(sql_comparePW, [id], (error, rows, fields) => {
+//                 if (error) {
+//                     if (conn) conn.release();
+//                     reject(error);
+//                     return;
+//                 }
+//                 var ret = false;
+//                 // if (rows[0].pPW == pw) ret = rows[0];
+//                 if (rows[0].pPW == pw) ret = true;
+//                 resolve(ret);
+//             })
+//         })
+//     })
+// }
+// async function pwChecker(id, pw) {
+//     return await sqlHandler(id, pw);
+// }
 
-const sql_compareID = "select count(*) from usertable where pID= ?;"
+// const sql_compareID = "select count(*) from usertable where pID= ?;"
+const sql_compareID = "select * from usertable where pID= ?;"
 function sqlHandler2(id, pw) {
     return new Promise((resolve, reject) => {
         dbpool.getConnection((err, conn) => {
@@ -142,7 +143,7 @@ function sqlHandler2(id, pw) {
                     return;
                 }
                 var ret = false;
-                if (rows[0] == 1) ret = true;
+                if (rows) ret = rows[0];
                 resolve(ret);
             })
         })
@@ -158,13 +159,14 @@ async function idChecker(id, pw) {
 module.exports = class DAO {
     constructor() { }
 
-    matchPassword = async function (id, pw, cb) {
-        if (await pwChecker(id, pw)) cb(null, { pID: id });
-        else cb('wrong pw', false);
-    }
+    // matchPassword = async function (id, pw, cb) {
+    //     if (await pwChecker(id, pw)) cb(null, { pID: id });
+    //     else cb('wrong pw', false);
+    // }
 
-    findById = (id, cb) => {
-        if (idChecker(id)) cb(null, true);
-        else cb('this ID does not exist', false);
+    findById = async function (id, cb) {
+        let user = await idChecker(id);
+        if (user) cb(null, user);
+        else cb(null, null);
     }
 }

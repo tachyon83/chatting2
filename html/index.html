@@ -15,17 +15,11 @@
         }
 
         div#chatLog {
+            width: 400px;
             height: 200px;
         }
     </style>
     <script>
-        // var selectedRoomID;
-        // var socket = io();
-
-        window.onload = function () {
-            // socket = io();
-        }
-
         // window.onload = function () {
         //     var socket = io();
 
@@ -47,27 +41,20 @@
 </head>
 
 <body>
-    <!-- <form onsubmit="event.preventDefault();" id="signin" action="/profile/signin" method="post"> -->
-    <!-- <form id="signin" action="/profile/signin" method="post">
-        ID<input id="pID" name="pID" type="text">
-        PW<input id="pPW" name="pPW" type="password">
-        Nick<input id="pNick" name="pNick" type="text">
-        <button id="signinBtn" type="submit">Sign In</button>
-    </form> -->
     <div id="roomList"></div>
     <div id='chatLog'></div>
     <script src='/socket.io/socket.io.js'></script>
     <script>
         var socket = io();
         // console.log(socket);
-        var profileDTO;
+        var profileDTO = null;
         // var roomDTO;
 
         // console.log('pID in roomlist', socket.pID);
         setInterval(() => { roomListRefreshServerCall(roomListRefresher) }, 500);
         // var signinDiv = document.getElementById('signin');
         // var signinBtn = document.getElementById("signinBtn");
-        // var chatLogDiv = document.getElementById('chatLog');
+        var chatLogDiv = document.getElementById('chatLog');
 
         // signinBtn.addEventListener('click', (e) => {
         //     e.target.preventDefault();
@@ -101,12 +88,6 @@
         //     }
         // })
 
-        socket.on('someone.joined', () => {
-            var msg = document.createElement('p');
-            msg.innerHTML = 'someone joined';
-            chatLogDiv.appendChild(msg);
-        })
-
         function roomListRefresher(rooms) {
             // console.log('roomListRefresher called')
             var roomListDiv = document.getElementById('roomList');
@@ -115,9 +96,11 @@
                 // console.log('for-loop', key);
                 var temp = document.getElementById(key);
                 if (temp != null) {
+                    // console.log('temp is not null')
                     temp.innerText = JSON.stringify(rooms[key]);
                     // console.log('changed')
                 } else {
+                    console.log('new element created')
                     let newRoom = document.createElement('p');
                     newRoom.className = 'room';
                     newRoom.id = key
@@ -125,14 +108,10 @@
                     //     selectedRoomID = this.roomID
                     // making a change just to...(github)
                     // })
-                    newRoom.addEventListener("dblclick", () => {
+                    newRoom.addEventListener("click", () => {
                         // console.log(key);
                         const roomDTO = rooms[newRoom.id];
                         socket.emit('room.join', roomDTO);
-                        socket.on('room.response', result => {
-                            // console.log('result upon dblclick', result)
-                            if (result) chatLogDiv.style.backgroundColor = "dodgerblue";
-                        })
                     })
                     newRoom.innerText = JSON.stringify(rooms[key]);
                     roomListDiv.appendChild(newRoom);
@@ -154,6 +133,17 @@
             //     }
             // };
         }
+        socket.on('room.join.response', result => {
+            console.log('room.join.response received')
+            // console.log('result upon dblclick', result)
+            if (result) chatLogDiv.style.backgroundColor = "dodgerblue";
+        })
+        socket.on('newbie', person => {
+            console.log('newbie received');
+            var temp = document.createElement('p');
+            temp.innerText = person + ' joined';
+            chatLogDiv.appendChild(temp);
+        })
     </script>
 </body>
 

@@ -9,6 +9,7 @@ const bodyParser = require('body-parser')
 const bcrypt = require('bcrypt');
 // important: this [cors] must come before Router
 const cors = require('cors');
+const flash = require('connect-flash')
 const router = express.Router();
 const app = express();
 const socketio = require('socket.io')
@@ -16,14 +17,13 @@ const socketio = require('socket.io')
 app.use(session({ secret: 'secret secretary', resave: true, saveUninitialized: false }))
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(flash())
 passportConfig();
 
 // app.use('/', static(__dirname + '/html/'));
 app.set('port', process.env.PORT || 3000);
 app.use(cors());
-app.use(bodyParser.urlencoded({
-    extended: false
-}));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
 
 // app.get('/', function (req, res) {
@@ -128,7 +128,17 @@ var messages = [];
 router.post('/profile/signin', passport.authenticate('local', {
     failureRedirect: '/profile/failure'
 }), (req, res) => {
-    res.redirect('/profile/success');
+    req.session.save(function () {
+        console.log(req.user)
+        // socket._id = req.user._id;
+        res.redirect('/profile/success');
+    })
+})
+router.route('/signout').get((req, res) => {
+    req.logout();
+    req.session.save(function () {
+        res.redirect('/');
+    })
 })
 router.route('/profile/success').get((req, res) => {
     res.sendFile(__dirname + "/html/index.html")
@@ -191,38 +201,10 @@ var io = socketio.listen(server);
 // io.use(function (socket, next) {
 //     sessionMiddleware(socket.request, {}, next);
 // })
+
 io.on('connection', (socket) => {
 
     console.log('a user connected');
-    // io.emit('enter');
-    // console.log('socket: ', socket);
-    // socket.on('profile.signin', profileDTO => {
-    //     // console.log(profiles)
-    //     // var authenticated = false;
-
-    //     // // later, need a fix to actually authenticate the user
-    //     // var userKey = profileDTO.pID;
-    //     // var user = profileDTO;
-    //     // if (user.pID != null) {
-    //     //     if (profiles.length == 0 || !profiles.hasOwnProperty(userKey)) {
-    //     //         profiles[userKey] = user;
-    //     //     }
-    //     //     // console.log('profiles', profiles)
-    //     //     // dot뒤의 문자는 문자열로 받아들여진다(변수명 사용불가)
-    //     //     if (profiles[userKey].pPW == user.pPW) authenticated = true;
-    //     // }
-    //     // if (authenticated) {
-    //     //     signinIDs[user.pID] = socket.id;
-    //     //     socket.pID = user.pID;
-    //     // }
-    //     // socket.emit('profile.response', authenticated);
-
-    //     // passport.authenticate('local',{
-    //     //     failureRedirect:'/',
-    //     // }),(req,res)=>{
-    //     //     res.redire
-    //     // })
-    // })
 
     socket.on('room.list', () => {
         // console.log('room.list called')
@@ -230,22 +212,32 @@ io.on('connection', (socket) => {
     })
 
     socket.on('room.join', roomDTO => {
+        const roomToJoin = rooms[roomDTO.roomID];
+        // console.log('roomToJoin', roomToJoin);
 
-        var roomToJoin = rooms[roomDTO.roomID];
-        console.log('roomToJoin', roomToJoin);
-        if (roomToJoin.roomCnt < roomToJoin.roomCapacity) {
+        // capacity만 지정,
+        // 현재 인원은 소켓에서 가져옴 
+
+        if (roomToJoin.roomCnt < roomToJoin.roomCapacity && (!io.sockets.adapter.rooms[roomToJoin.roomID] || !io.sockets.adapter.rooms[roomToJoin.roomID].sockets[socket.id])) {
             // console.log('now emitting')
-            socket.emit('room.response', true);
+            socket.emit('room.join.response', true);
             // roomCnt등에 synchronized처리
             // 그 외에도 sync처리 부분 확인필요
             rooms[roomDTO.roomID].roomCnt++;
             // profiles[socket.pID].pRoomID = roomToJoin.roomID;
             // socket.join(room[roomToJoin.roomID], () => {
-            socket.join(roomToJoin.roomID);
+            socket.join(roomToJoin.roomID, () => {
+                console.log(io.sockets.adapter.rooms[roomToJoin.roomID])
+                console.log(socket.id + ' joined ' + roomToJoin.roomID);
+                // console.log(io.to(roomToJoin.roomID))
+                io.to(roomToJoin.roomID).emit('newbie', socket.id);
+                // console.log(io.sockets.adapter.rooms);
+            });
             // console.log(io.sockets.adapter.rooms)
-            console.log(io.sockets.adapter)
+            // console.log(io.sockets.adapter)
             // io.to(io.adapter.rooms[roomToJoin.roomID]).emit('someone.joined');
         }
+        socket.emit('room.join.response', false);
     })
     // socket.on('chat', (msg) => {
     //     messages.push({ 'name': msg.name, 'message': msg.txt });
