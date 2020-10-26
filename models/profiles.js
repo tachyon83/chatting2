@@ -28,7 +28,7 @@ var profiles = {
         friendsList: [],
         banList: [],
         socket_id: null,
-    }
+    },
     mary: {
         id: 'mary',
         pw: 111,
@@ -38,7 +38,7 @@ var profiles = {
         friendsList: [],
         banList: [],
         socket_id: null,
-    }
+    },
     jane: {
         id: 'jane',
         pw: 111,
@@ -48,7 +48,7 @@ var profiles = {
         friendsList: [],
         banList: [],
         socket_id: null,
-    }
+    },
     alice: {
         id: 'alice',
         pw: 111,
