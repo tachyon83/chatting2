@@ -88,7 +88,7 @@ router.route('/profile/signout').get((req, res) => {
     })
 })
 router.route('/profile/success').get((req, res) => {
-    res.sendFile(__dirname + "/html/index.html")
+    if (req.isAuthenticated()) res.sendFile(__dirname + "/html/index.html")
 })
 router.route('/profile/failure').get((req, res) => {
     res.sendFile(__dirname + "/html/signin.html")
