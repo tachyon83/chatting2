@@ -26,6 +26,9 @@ module.exports = () => {
         //     done(null, user);
         // })
 
+        // if authenticated (profiles[id]), 
+        // console.log('deserialize called and req.user is registered')
+
         if (profiles[id]) return done(null, profiles[id]);
         else return done(null, null)
 

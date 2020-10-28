@@ -1,5 +1,7 @@
 const url = require('url');
+const path = require('path'); // OS-independent
 const http = require('http');
+const bodyParser = require('body-parser')
 const static = require('serve-static');
 const express = require('express');
 const session = require('express-session');
@@ -7,15 +9,16 @@ const session = require('express-session');
 // const RedisStore = require("connect-redis")(session);
 const passport = require('passport');
 const passportConfig = require('./passportTest');
-const bodyParser = require('body-parser')
 const bcrypt = require('bcrypt');
 // important: this [cors] must come before Router
 const cors = require('cors');
 const flash = require('connect-flash')
 const router = express.Router();
 const app = express();
+app.set('view engine', 'ejs');
+app.set('views', __dirname + '/views');
 const socketio = require('socket.io')
-// const path = require('path');
+
 var rooms = require('./models/rooms')
 var profiles = require('./models/profiles')
 
@@ -69,14 +72,17 @@ router.route('/').get((req, res) => {
 // friend list, group list, room list
 // person info (id,chat_room_id, room, group, level )
 
-var chatLogs = {};
-var messages = [];
+var chatLogs = [];
+var userMap = {};
+var socketMap = {};
+
 
 router.post('/profile/signin', passport.authenticate('local', {
-    failureRedirect: '/profile/failure'
+    failureRedirect: '/profile/failure',
+    failureFlash: true
 }), (req, res) => {
     req.session.save(function () {
-        console.log(req.user)
+        // console.log(req.user)
         // socket._id = req.user._id;
         res.redirect('/profile/success');
     })
@@ -87,8 +93,47 @@ router.route('/profile/signout').get((req, res) => {
         res.redirect('/');
     })
 })
+
+// important! middleware 사용법
+// app.get('/profile/success',middleware,function(req,res){
+//     res.send(req.user);
+// })
+// function middleware(req,res,next){
+//     if(req.isAuthenticated())return next();
+//     res.sendFile(__dirname + '/html/signin.html');
+// }
+
+// important! middle ware in router
+
+function middleware1(req, res, next) {
+    if (req.isAuthenticated()) return next(req, res)
+    res.sendFile(__dirname + "/html/signin.html")
+}
+function next1(req, res) {
+    // console.log(req.user)
+    userMap[req.user.id] = null;
+    // res.sendFile(__dirname + "/views/index.html")
+    req.app.render('index', { id: req.user.id }, (err, html) => {
+        if (err) {
+            console.log(err)
+            res.end('<h1>ejs error!</h1>');
+            return;
+        }
+        res.end(html);
+    })
+}
+
 router.route('/profile/success').get((req, res) => {
-    if (req.isAuthenticated()) res.sendFile(__dirname + "/html/index.html")
+    middleware1(req, res, next1);
+
+    // function saveUserInSession(req, res, next) {
+    //     if (req.isAuthenticated()) return next(req);
+    //     res.sendFile(__dirname + "/html/signin.html")
+    // } (req, res, function (req) {
+    //     console.log(req.user)
+    //     userMap[req.user.id] = io.socket.id;
+    //     console.log(userMap)
+    // })
 })
 router.route('/profile/failure').get((req, res) => {
     res.sendFile(__dirname + "/html/signin.html")
@@ -134,7 +179,12 @@ const io = socketio.listen(server);
 
 io.on('connection', (socket) => {
 
-    console.log('a user connected');
+    socket.on('socket.connect', data => {
+        // console.log(data)
+        userMap[data[socket.id]] = socket.id
+        socketMap[socket.id] = data[socket.id]
+        console.log(socketMap[socket.id] + ' has been connected')
+    })
     // profiles[socket]
 
     socket.on('room.list', () => {
@@ -143,8 +193,8 @@ io.on('connection', (socket) => {
     })
 
     socket.on('room.join', roomDTO => {
-        const targetId = roomDTO.roomID
-        const target = rooms[targetId]
+        let targetId = roomDTO.roomID
+        let target = rooms[targetId]
         // capacity만 지정,
         // 현재 인원은 소켓에서 가져옴 
 
@@ -157,20 +207,37 @@ io.on('connection', (socket) => {
             // profiles[socket.pID].pRoomID = roomToJoin.roomID;
             // socket.join(room[roomToJoin.roomID], () => {
             socket.join(targetId, () => {
+                // socket._currRoom = targetId;
                 rooms[targetId].roomCnt = io.sockets.adapter.rooms[targetId].length
                 // io.sockets.to(targetId).emit('system.invite', socket);
-                io.to(targetId).emit('system.invite', socket.id);
+                profiles[socketMap[socket.id]].status = targetId;
+                io.to(targetId).emit('system.welcome', socketMap[socket.id]);
             });
         } else socket.emit('room.join.response', false);
     })
     socket.on('chat.public', chatDTO => {
         // messages.push({ 'name': msg.name, 'message': msg.txt });
-        let currRoom = null;
-        for (var key of Object.keys(socket.rooms)) if (key != socket.id) currRoom = key
-        io.to(currRoom).emit('chat.public', chatDTO);
+        if (!chatDTO.to) io.to(profiles[chatDTO.from].status).emit('chat.public', chatDTO);
+        // let currRoom = null;
+        // for (var key of Object.keys(socket.rooms)) if (key != socket.id) currRoom = key
+        // io.to(currRoom).emit('chat.public', chatDTO);
+    })
+    socket.on('room.leave', roomDTO => {
+        let targetId = roomDTO.roomID
+        io.to(targetId).emit('system.farewell', socketMap[socket.id])
+        socket.leave(targetId, () => {
+            profiles[socketMap[socket.id]].status = 0;
+            rooms[targetId].roomCnt--;
+        })
     })
     socket.on('disconnect', () => {
-        console.log('this user disconnected');
-        io.emit('leave');
+        let currRoomId = profiles[socketMap[socket.id]].status;
+        // if this socket is in a room, need to leave it as well        
+        if (currRoomId) {
+            rooms[currRoomId].roomCnt--;
+            io.to(currRoomId).emit('system.farewell', socketMap[socket.id])
+            profiles[socketMap[socket.id]].status = 0;
+        }
+        console.log(socketMap[socket.id] + ' has been disconnected');
     })
 })
