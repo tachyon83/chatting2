@@ -181,6 +181,10 @@ const io = socketio.listen(server);
 
 io.on('connection', (socket) => {
 
+    // socket.use((packet,next)=>{
+
+    // })
+
     socket.on('socket.connect', data => {
         // console.log(data)
         userMap[data[socket.id]] = socket.id
@@ -213,20 +217,26 @@ io.on('connection', (socket) => {
                 rooms[targetId].roomCnt = io.sockets.adapter.rooms[targetId].length
                 // io.sockets.to(targetId).emit('system.invite', socket);
                 profiles[socketMap[socket.id]].status = targetId;
-                io.to(targetId).emit('system.welcome', socketMap[socket.id]);
+                let currTime = new Date();
+                let timestamp = currTime.getHours() + ':' + currTime.getMinutes();
+                io.to(targetId).emit('system.welcome', { packet: socketMap[socket.id], timestamp: timestamp });
             });
         } else socket.emit('room.join.response', false);
     })
     socket.on('chat.public', chatDTO => {
         // messages.push({ 'name': msg.name, 'message': msg.txt });
-        if (!chatDTO.to) io.to(profiles[chatDTO.from].status).emit('chat.public', chatDTO);
+        let currTime = new Date();
+        let timestamp = currTime.getHours() + ':' + currTime.getMinutes();
+        if (!chatDTO.to) io.to(profiles[chatDTO.from].status).emit('chat.public', { packet: chatDTO, timestamp: timestamp });
         // let currRoom = null;
         // for (var key of Object.keys(socket.rooms)) if (key != socket.id) currRoom = key
         // io.to(currRoom).emit('chat.public', chatDTO);
     })
     socket.on('room.leave', roomDTO => {
         let targetId = roomDTO.roomID
-        io.to(targetId).emit('system.farewell', socketMap[socket.id])
+        let currTime = new Date();
+        let timestamp = currTime.getHours() + ':' + currTime.getMinutes();
+        io.to(targetId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         socket.leave(targetId, () => {
             profiles[socketMap[socket.id]].status = 0;
             rooms[targetId].roomCnt--;

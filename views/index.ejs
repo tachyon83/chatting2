@@ -129,20 +129,20 @@
             }
         })
         // socket.on('system.invite', profileDTO => {
-        socket.on('system.welcome', id => {
+        socket.on('system.welcome', data => {
             // userId = profileDTO.id
             var temp = document.createElement('p');
-            temp.innerText = id + ' joined';
+            temp.innerText = data.packet + ' has joined.' + ' (' + data.timestamp + ')';
             chatLogDiv.appendChild(temp);
         })
-        socket.on('system.farewell', id => {
+        socket.on('system.farewell', data => {
             var temp = document.createElement('p');
-            temp.innerText = id + ' left';
+            temp.innerText = data.packet + ' has left.' + ' (' + data.timestamp + ')';
             chatLogDiv.appendChild(temp);
         })
-        socket.on('chat.public', chatDTO => {
+        socket.on('chat.public', data => {
             var temp = document.createElement('p');
-            temp.innerText = chatDTO.from + ': ' + chatDTO.text;
+            temp.innerText = data.packet.from + ': ' + data.packet.text + ' (' + data.timestamp + ')';
             chatLogDiv.appendChild(temp);
         })
     </script>
