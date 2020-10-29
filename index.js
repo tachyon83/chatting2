@@ -38,6 +38,8 @@ app.use(session({ secret: 'secret secretary', resave: true, saveUninitialized: f
 // }))
 app.use(passport.initialize());
 app.use(passport.session());
+
+// flash는 내부적으로 session을 이용하기 때문에 session 보다 아래쪽에서 미들웨어를 설치
 app.use(flash())
 passportConfig();
 
