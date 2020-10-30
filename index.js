@@ -37,6 +37,7 @@ const sessionIntoRedis = (session({
     saveUninitialized: false,
     store: new RedisStore({
         client: client,
+        ttl: 30,
         // host: 'localhost',
         // port: 6379,
         // prefix: 'session',
@@ -101,6 +102,10 @@ io.use(function (socket, next) {
 })
 
 io.on('connection', (socket) => {
+    // socket.use(function(socket.request,socket.request.res,next){
+    //     if(this.request.session.passport.user)socket.disconnect();
+    //     next()
+    // })
     userMap[socket.request.session.passport.user] = socket.id
     socketMap[socket.id] = socket.request.session.passport.user
     console.log(socketMap[socket.id] + ' has been connected')
