@@ -40,9 +40,9 @@ const sessionIntoRedis = (session({
         // host: 'localhost',
         // port: 6379,
         // prefix: 'session',
-        db: 0,
-        saveUninitialized: false,
-        resave: false
+        // db: 0,
+        // saveUninitialized: false,
+        // resave: false
     }),
 }))
 
