@@ -7,13 +7,17 @@
     <title>index.ejs</title>
     <script>
         window.onload = function () {
-            const username = "<%=userId%>"
+            var username = "<%=userId%>"
+            username = parseInt(username)
             var btn = document.getElementsByTagName('button')[0]
             var nextRoute = null
-            if (!username) {
+            console.log(username)
+            if (username === 0) {
+                console.log('zero')
                 btn.innerText = 'signin'
                 nextRoute = '/signin'
             } else {
+                console.log('nonzero')
                 btn.innerText = 'signout'
                 nextRoute = '/signout'
             }

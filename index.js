@@ -17,7 +17,8 @@ const client = require('./config/redisClient')
 // important: this [cors] must come before Router
 const cors = require('cors');
 
-const router = express.Router();
+// const router = express.Router();
+const router = require('./routes/router')
 const app = express();
 app.set('port', process.env.PORT || 3000);
 // app.set('view engine', 'html');
@@ -38,10 +39,10 @@ const sessionIntoRedis = (session({
         client: client,
         // host: 'localhost',
         // port: 6379,
-        // prefix:'session',
-        // db:0,
-        // saveUninitialized:false,
-        // resave:false
+        // prefix: 'session',
+        db: 0,
+        saveUninitialized: false,
+        resave: false
     }),
 }))
 
@@ -57,44 +58,8 @@ passportConfig();
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
+app.use('/', router);
 
-// chat messages, log-in & out logs
-// friend list, group list, room list
-// person info (id,chat_room_id, room, group, level )
-
-var chatLogs = [];
-var userMap = {};
-var socketMap = {};
-
-router.get('/', (req, res) => {
-    // res.sendFile(path.join(__dirname + '/html/chat.html'));
-    // res.sendFile(__dirname + '/views/index.ejs');
-    // res.render('index', { locals: { username: req.session.key ? req.session.passport.user : null } })
-    res.render('index', { userId: req.session.key ? req.session.passport.user : null })
-})
-router.get('/signin', (req, res) => {
-    if (req.session.key) res.render('chat', { userId: req.session.key ? req.session.passport.user : null })
-    res.render('signin')
-})
-router.get('/signout', (req, res) => {
-    if (req.session.key) {
-
-        // difference between req.session.destroy and req.logout
-
-        // req.session.destroy(() => {
-        //     res.redirect('/')
-        // })
-        req.logout();
-        req.session.save(() => {
-            // res.redirect('/')
-            res.render('index')
-        })
-    } else res.render('index')
-})
-router.get('/profile/signin', (req, res) => {
-    if (req.session.key) res.render('chat', { userId: req.session.key ? req.session.passport.user : null })
-    else res.render('signin')
-})
 router.post('/profile/signin', passport.authenticate('local', {
     failureRedirect: '/profile/failure',
     failureFlash: true
@@ -108,10 +73,14 @@ router.get('/profile/success', (req, res) => {
     userMap[req.user.id] = null;
     res.render('chat', { userId: req.session.passport.user ? req.session.passport.user : null })
 })
-router.route('/profile/failure').get((req, res) => {
-    // res.sendFile(__dirname + "/html/signin.html")
-    res.render('signin')
-})
+
+// chat messages, log-in & out logs
+// friend list, group list, room list
+// person info (id,chat_room_id, room, group, level )
+
+var chatLogs = [];
+var userMap = {};
+var socketMap = {};
 
 // important! middleware 사용법
 // app.get('/profile/success',middleware,function(req,res){
@@ -122,7 +91,6 @@ router.route('/profile/failure').get((req, res) => {
 //     res.sendFile(__dirname + '/html/signin.html');
 // }
 
-app.use('/', router);
 const server = http.createServer(app);
 server.listen(app.get('port'), () => {
     console.log('http://localhost:%d', app.get('port'));
@@ -190,12 +158,12 @@ io.on('connection', (socket) => {
         })
     })
     socket.on('disconnect', () => {
-        io.to(currRoomId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         let currRoomId = profiles[socketMap[socket.id]].status;
         // if this socket is in a room, need to leave it as well        
         if (currRoomId) {
             rooms[currRoomId].roomCnt--;
             profiles[socketMap[socket.id]].status = 0;
+            io.to(currRoomId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         }
         console.log(socketMap[socket.id] + ' has been disconnected');
     })

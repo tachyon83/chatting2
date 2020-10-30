@@ -14,6 +14,8 @@ module.exports = () => {
 
     // serializeUser and deserializeUser are both required for passport to work
 
+    // this first variable in this 'serialize' function becomes
+    // the key of req.session.passport.[key]
     passport.serializeUser((user, done) => {
         // req.session.passport.user에 저장
         // done(null, user.pID);
