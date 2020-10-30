@@ -8,7 +8,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 // const MyTestModel = require('./models/MyTestModel');
 // const myTestModel = new MyTestModel();
-const profiles = require('./models/profiles')
+const profiles = require('../models/profiles')
 
 module.exports = () => {
 

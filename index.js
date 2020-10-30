@@ -1,41 +1,51 @@
-const url = require('url');
-const path = require('path'); // OS-independent
+// const url = require('url');
+// const path = require('path'); // OS-independent
 const http = require('http');
 const bodyParser = require('body-parser')
 const static = require('serve-static');
 const express = require('express');
 const session = require('express-session');
-// const redis = require('./redis')
-// const RedisStore = require("connect-redis")(session);
+
 const passport = require('passport');
-const passportConfig = require('./passportTest');
+const passportConfig = require('./config/passportTest');
 const bcrypt = require('bcrypt');
+const flash = require('connect-flash')
+
+const RedisStore = require("connect-redis")(session);
+const client = require('./config/redisClient')
+
 // important: this [cors] must come before Router
 const cors = require('cors');
-const flash = require('connect-flash')
+
 const router = express.Router();
 const app = express();
+app.set('port', process.env.PORT || 3000);
+// app.set('view engine', 'html');
 app.set('view engine', 'ejs');
-app.set('views', __dirname + '/views');
+// app.set('views', __dirname + '/views');
+app.set('views', __dirname + '/html');
+
 const socketio = require('socket.io')
 
 var rooms = require('./models/rooms')
 var profiles = require('./models/profiles')
 
-app.use(session({ secret: 'secret secretary', resave: true, saveUninitialized: false }))
-// app.use(session({
-//     store:new RedisStore({
-//         client:redis,
-//         host:'localhost',
-//         port:6379,
-//         prefix:'session',
-//         db:0,
-//         saveUninitialized:false,
-//         resave:false
-//     }),
-//     secret:'secret secretary',
-//     cookie:{maxAge:100000},
-// }))
+const sessionIntoRedis = (session({
+    secret: 'secret secretary',
+    resave: false,
+    saveUninitialized: false,
+    store: new RedisStore({
+        client: client,
+        // host: 'localhost',
+        // port: 6379,
+        // prefix:'session',
+        // db:0,
+        // saveUninitialized:false,
+        // resave:false
+    }),
+}))
+
+app.use(sessionIntoRedis)
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -44,31 +54,9 @@ app.use(flash())
 passportConfig();
 
 // app.use('/', static(__dirname + '/html/'));
-app.set('port', process.env.PORT || 3000);
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
-
-app.get('/', function (req, res) {
-    // res.sendFile(path.join(__dirname + '/html/chat.html'));
-    res.sendFile(__dirname + '/html/signin.html');
-    // console.log(__dirname)
-    // res.sendFile(__dirname + '/html/index.html');
-})
-
-// app.get('/', function (req, res) {
-//     if (req.session.key) {
-//         res.redirect('/')
-//     } else {
-//         res.redirect('/html/signin.html')
-//     }
-// })
-
-router.route('/').get((req, res) => {
-    // res.sendFile(__dirname + '/html/signin.html');
-    res.sendFile(__dirname + '/html/index.html');
-    // res.redirect('/signin.html')
-})
 
 // chat messages, log-in & out logs
 // friend list, group list, room list
@@ -78,22 +66,51 @@ var chatLogs = [];
 var userMap = {};
 var socketMap = {};
 
+router.get('/', (req, res) => {
+    // res.sendFile(path.join(__dirname + '/html/chat.html'));
+    // res.sendFile(__dirname + '/views/index.ejs');
+    // res.render('index', { locals: { username: req.session.key ? req.session.passport.user : null } })
+    res.render('index', { userId: req.session.key ? req.session.passport.user : null })
+})
+router.get('/signin', (req, res) => {
+    if (req.session.key) res.render('chat', { userId: req.session.key ? req.session.passport.user : null })
+    res.render('signin')
+})
+router.get('/signout', (req, res) => {
+    if (req.session.key) {
 
+        // difference between req.session.destroy and req.logout
+
+        // req.session.destroy(() => {
+        //     res.redirect('/')
+        // })
+        req.logout();
+        req.session.save(() => {
+            // res.redirect('/')
+            res.render('index')
+        })
+    } else res.render('index')
+})
+router.get('/profile/signin', (req, res) => {
+    if (req.session.key) res.render('chat', { userId: req.session.key ? req.session.passport.user : null })
+    else res.render('signin')
+})
 router.post('/profile/signin', passport.authenticate('local', {
     failureRedirect: '/profile/failure',
     failureFlash: true
 }), (req, res) => {
     req.session.save(function () {
         // console.log(req.user)
-        // socket._id = req.user._id;
         res.redirect('/profile/success');
     })
 })
-router.route('/profile/signout').get((req, res) => {
-    req.logout();
-    req.session.save(function () {
-        res.redirect('/');
-    })
+router.get('/profile/success', (req, res) => {
+    userMap[req.user.id] = null;
+    res.render('chat', { userId: req.session.passport.user ? req.session.passport.user : null })
+})
+router.route('/profile/failure').get((req, res) => {
+    // res.sendFile(__dirname + "/html/signin.html")
+    res.render('signin')
 })
 
 // important! middleware 사용법
@@ -105,149 +122,79 @@ router.route('/profile/signout').get((req, res) => {
 //     res.sendFile(__dirname + '/html/signin.html');
 // }
 
-// important! middle ware in router
-
-function middleware1(req, res, next) {
-    if (req.isAuthenticated()) return next(req, res)
-    res.sendFile(__dirname + "/html/signin.html")
-}
-function next1(req, res) {
-    // console.log(req.user)
-    userMap[req.user.id] = null;
-    // res.sendFile(__dirname + "/views/index.html")
-    req.app.render('index', { id: req.user.id }, (err, html) => {
-        if (err) {
-            console.log(err)
-            res.end('<h1>ejs error!</h1>');
-            return;
-        }
-        res.end(html);
-    })
-}
-
-router.route('/profile/success').get((req, res) => {
-    middleware1(req, res, next1);
-
-    // function saveUserInSession(req, res, next) {
-    //     if (req.isAuthenticated()) return next(req);
-    //     res.sendFile(__dirname + "/html/signin.html")
-    // } (req, res, function (req) {
-    //     console.log(req.user)
-    //     userMap[req.user.id] = io.socket.id;
-    //     console.log(userMap)
-    // })
-})
-router.route('/profile/failure').get((req, res) => {
-    res.sendFile(__dirname + "/html/signin.html")
-})
-
-// router.route('/room/list').get((req, res) => {
-//     res.end(JSON.stringify({ rooms: rooms }));
-// });
-
-// router.route('/room/join/:roomID/:pID').get((req, res) => {
-//     var selectedRoomID = req.params.roomID;
-//     var pID = req.params.pID;
-
-//     // personal socket
-//     // 접속하는 순간부터 소켓으로 모든 이벤트 관리해야할듯...?
-
-//     res.redirect('/chat.html');
-// })
-
 app.use('/', router);
 const server = http.createServer(app);
 server.listen(app.get('port'), () => {
     console.log('http://localhost:%d', app.get('port'));
 });
 const io = socketio.listen(server);
-
-// const sessionMiddleware = session({
-//     store: new RedisStore({
-//         host: 'localhost',
-//         port: 6379,
-//         client: client,
-//         ttl: 260,
-//     }),
-//     secret: "secret cat",
-// })
-// io.use(function (socket, next) {
-//     sessionMiddleware(socket.request, socket.request.res || {}, next);
-// })
-// app.use(sessionMiddleware);
-// app.get('/', function (req, res) {
-//     req.session
-// })
+io.use(function (socket, next) {
+    sessionIntoRedis(socket.request, socket.request.res || {}, next);
+})
 
 io.on('connection', (socket) => {
+    userMap[socket.request.session.passport.user] = socket.id
+    socketMap[socket.id] = socket.request.session.passport.user
+    console.log(socketMap[socket.id] + ' has been connected')
 
-    // socket.use((packet,next)=>{
+    // console.log(socket.request.sessionID)
+    // console.log(socket.request.session.passport.user)
 
-    // })
+    // socket.use('chat',(packet,next)=>{
 
-    socket.on('socket.connect', data => {
-        // console.log(data)
-        userMap[data[socket.id]] = socket.id
-        socketMap[socket.id] = data[socket.id]
-        console.log(socketMap[socket.id] + ' has been connected')
+    var timestamp = null
+
+    socket.use((packet, next) => {
+        let currTime = new Date();
+        timestamp = currTime.getHours() + ':' + currTime.getMinutes();
+        next();
     })
-    // profiles[socket]
 
     socket.on('room.list', () => {
-        // console.log('room.list called')
         socket.emit('room.list.response', rooms);
     })
-
     socket.on('room.join', roomDTO => {
         let targetId = roomDTO.roomID
         let target = rooms[targetId]
         // capacity만 지정,
         // 현재 인원은 소켓에서 가져옴 
 
+        // 방에 들어갈 인원이 있고, (방이 존재하지 않거나 방에 현 소켓이 포함되지 않은 경우)
+        // 방이 존재하지 않는 경우에 대한 조건은 이후 삭제 필요
         if (target.roomCnt < target.roomCapacity && (!io.sockets.adapter.rooms[targetId] || !io.sockets.adapter.rooms[targetId].sockets[socket.id])) {
             // if (target.roomCnt < target.roomCapacity && !io.sockets.adapter.rooms[targetId].sockets[socket.id]) {
             socket.emit('room.join.response', true);
             // roomCnt등에 synchronized처리
             // 그 외에도 sync처리 부분 확인필요
+
+            // socket의 rooms.length로 읽는 것이 위험할 경우에 대한 대비
             // rooms[roomDTO.roomID].roomCnt++;
-            // profiles[socket.pID].pRoomID = roomToJoin.roomID;
-            // socket.join(room[roomToJoin.roomID], () => {
+
             socket.join(targetId, () => {
-                // socket._currRoom = targetId;
                 rooms[targetId].roomCnt = io.sockets.adapter.rooms[targetId].length
-                // io.sockets.to(targetId).emit('system.invite', socket);
                 profiles[socketMap[socket.id]].status = targetId;
-                let currTime = new Date();
-                let timestamp = currTime.getHours() + ':' + currTime.getMinutes();
                 io.to(targetId).emit('system.welcome', { packet: socketMap[socket.id], timestamp: timestamp });
             });
         } else socket.emit('room.join.response', false);
     })
     socket.on('chat.public', chatDTO => {
         // messages.push({ 'name': msg.name, 'message': msg.txt });
-        let currTime = new Date();
-        let timestamp = currTime.getHours() + ':' + currTime.getMinutes();
         if (!chatDTO.to) io.to(profiles[chatDTO.from].status).emit('chat.public', { packet: chatDTO, timestamp: timestamp });
-        // let currRoom = null;
-        // for (var key of Object.keys(socket.rooms)) if (key != socket.id) currRoom = key
-        // io.to(currRoom).emit('chat.public', chatDTO);
     })
     socket.on('room.leave', roomDTO => {
         let targetId = roomDTO.roomID
-        let currTime = new Date();
-        let timestamp = currTime.getHours() + ':' + currTime.getMinutes();
-        io.to(targetId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         socket.leave(targetId, () => {
-            profiles[socketMap[socket.id]].status = 0;
             rooms[targetId].roomCnt--;
+            profiles[socketMap[socket.id]].status = 0;
+            io.to(targetId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         })
     })
     socket.on('disconnect', () => {
+        io.to(currRoomId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         let currRoomId = profiles[socketMap[socket.id]].status;
         // if this socket is in a room, need to leave it as well        
         if (currRoomId) {
             rooms[currRoomId].roomCnt--;
-            io.to(currRoomId).emit('system.farewell', socketMap[socket.id])
             profiles[socketMap[socket.id]].status = 0;
         }
         console.log(socketMap[socket.id] + ' has been disconnected');

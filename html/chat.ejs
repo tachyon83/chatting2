@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>chat_index.html</title>
+    <title>chat.html</title>
     <style>
         .room {
             border: 1px solid dodgerblue;
@@ -17,6 +17,8 @@
         div#chatLog {
             width: 400px;
             height: 200px;
+            background-color: aliceblue;
+            display: none;
         }
 
         div#chatpad {
@@ -41,11 +43,30 @@
     </div>
     <script src='/socket.io/socket.io.js'></script>
     <script>
-        var socket = io();
+        const socket = io();
+
+        // passport 인증 후 req.user.id를 저장
+        // 그걸 프론트로 보내줌
+        // 프론트에서는 그 아이디를 받아서 index.ejs에서 첫 생성된 소켓의 아이디와 
+        // 묶어서 서버로 보냄.
+        // 서버에서는 어떤 소켓이 생성된 것인지는 알지만, 그것이 누구의 것인지는 모름
+        // 동시 로그인한 유저들이 있을 수 있으므로.
+        // 그래서 socket.id를 key로 userId를 value로 묶어서 보내면
+        // 서버는 socket.id를 갖고 있으므로 접근하여 처리 가능
+
+        // 페이지 로딩과 함께 userId는 갖고 있는 상태이고
+        // 비동기로 connect이벤트 발생 시 묶어서 보내준다
+
+        // socket.on('connect', () => {
+        //     socket.emit('socket.connect', { [socket.id]: userId });
+        // })
+
+        // var userId = socket.request.session.passport.user
+        var userId = "<%=userId%>"
         var profileDTO = null;
-        var userId = null;
+        // var userId = null;
         var rooms = null;
-        // var roomDTO;
+        var roomDTO = null;
         var chatLogDiv = document.getElementById('chatLog');
         var roomListDiv = document.getElementById('roomList');
         var chatPadDiv = document.getElementById('chatPad');
@@ -63,10 +84,12 @@
             socket.emit('chat.public', chatDTO);
         })
         roomLeave.addEventListener('click', () => {
-            socket.emit('room.leave');
+            // console.log(roomDTO);
+            socket.emit('room.leave', roomDTO);
+            chatText.value = ''
             chatPadDiv.style.display = "none";
-            roomListDiv.style.display = "visible";
-            chatLogDiv.style.backgroundColor = "none";
+            roomListDiv.style.display = "block";
+            chatLogDiv.style.display = "none"
         })
 
         function roomListRefreshServerCall(callback) {
@@ -89,7 +112,7 @@
                     newRoom.id = key
 
                     newRoom.addEventListener("dblclick", () => {
-                        const roomDTO = rooms[newRoom.id];
+                        roomDTO = rooms[newRoom.id];
                         socket.emit('room.join', roomDTO);
                     })
                     newRoom.innerText = JSON.stringify(rooms[key]);
@@ -100,22 +123,27 @@
 
         socket.on('room.join.response', ok => {
             if (ok) {
-                chatLogDiv.style.backgroundColor = "aliceblue";
+                chatLogDiv.innerHTML = null;
+                chatLogDiv.style.display = "block";
                 roomListDiv.style.display = "none";
-                chatPadDiv.style.display = "visible";
+                chatPadDiv.style.display = "block";
             }
         })
         // socket.on('system.invite', profileDTO => {
-        socket.on('system.welcome', id => {
+        socket.on('system.welcome', data => {
             // userId = profileDTO.id
-            userId = id
             var temp = document.createElement('p');
-            temp.innerText = id + ' joined';
+            temp.innerText = data.packet + ' has joined.' + ' (' + data.timestamp + ')';
             chatLogDiv.appendChild(temp);
         })
-        socket.on('chat.public', chatDTO => {
+        socket.on('system.farewell', data => {
             var temp = document.createElement('p');
-            temp.innerText = chatDTO.from + ': ' + chatDTO.text;
+            temp.innerText = data.packet + ' has left.' + ' (' + data.timestamp + ')';
+            chatLogDiv.appendChild(temp);
+        })
+        socket.on('chat.public', data => {
+            var temp = document.createElement('p');
+            temp.innerText = data.packet.from + ': ' + data.packet.text + ' (' + data.timestamp + ')';
             chatLogDiv.appendChild(temp);
         })
     </script>
