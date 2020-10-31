@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 
 router.get('/', (req, res) => {
-    console.log('basic path')
+    console.log(req.isAuthenticated())
+    console.log(req.session.passport)
     // res.sendFile(path.join(__dirname + '/html/chat.html'));
     // res.sendFile(__dirname + '/views/index.ejs');
     // res.render('index', { locals: { username: req.session.key ? req.session.passport.user : null } })
@@ -12,25 +13,7 @@ router.get('/signin', (req, res) => {
     if (req.isAuthenticated()) res.render('chat', { userId: req.session.passport.user })
     res.render('signin')
 })
-router.get('/signout', (req, res) => {
-    console.log('inside path:signout')
-    if (req.isAuthenticated()) {
-        console.log('about to destroy')
-        console.log('session', req.session.passport.user)
 
-        // difference between req.session.destroy and req.logout
-
-        req.session.destroy(() => {
-            console.log('destroyed')
-            res.redirect('/')
-        })
-        // req.logout();
-        // req.session.save(() => {
-        //     // res.redirect('/')
-        //     res.render('index', { userId: 0 })
-        // })
-    } else res.render('index', { userId: 0 })
-})
 router.get('/profile/signin', (req, res) => {
     if (req.isAuthenticated()) res.render('chat', { userId: req.session.passport.user })
     else res.render('signin')

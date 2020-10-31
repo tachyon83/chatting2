@@ -67,12 +67,37 @@ router.post('/profile/signin', passport.authenticate('local', {
 }), (req, res) => {
     req.session.save(function () {
         // console.log(req.user)
-        res.redirect('/profile/success');
+        userMap[req.user.id] = null;
+        res.render('chat', { userId: req.session.passport.user ? req.session.passport.user : null })
     })
 })
-router.get('/profile/success', (req, res) => {
-    userMap[req.user.id] = null;
-    res.render('chat', { userId: req.session.passport.user ? req.session.passport.user : null })
+router.get('/signout', (req, res) => {
+    if (req.isAuthenticated()) {
+        // console.log(io.sockets);
+        console.log('connected list', io.sockets.connected)
+        console.log('connected list2', io.sockets)
+        for (let eSocketId of Object.keys(io.sockets.connected)) {
+            console.log(eSocketId)
+            if (eSocketId == userMap[req.session.passport.user]) {
+                console.log('found')
+                console.log(io.sockets.connected[eSocketId])
+                io.sockets.connected[eSocketId].disconnect();
+            }
+        }
+
+        // difference between req.session.destroy and req.logout
+
+        req.session.destroy(() => {
+            console.log('destroyed')
+            console.log(req.session)
+            res.redirect('/')
+        })
+        // req.logout();
+        // req.session.save(() => {
+        //     // res.redirect('/')
+        //     res.render('index', { userId: 0 })
+        // })
+    } else res.render('index', { userId: 0 })
 })
 
 // chat messages, log-in & out logs
@@ -102,6 +127,14 @@ io.use(function (socket, next) {
 })
 
 io.on('connection', (socket) => {
+    socket.use((packet, next) => {
+        let currTime = new Date();
+        timestamp = currTime.getHours() + ':' + currTime.getMinutes();
+        // console.log(socket.request.session.passport)
+        if (socket.request.session.passport) return next();
+        socket.disconnect();
+        console.log('this session is expired')
+    })
     // socket.use(function(socket.request,socket.request.res,next){
     //     if(this.request.session.passport.user)socket.disconnect();
     //     next()
@@ -117,11 +150,10 @@ io.on('connection', (socket) => {
 
     var timestamp = null
 
-    socket.use((packet, next) => {
-        let currTime = new Date();
-        timestamp = currTime.getHours() + ':' + currTime.getMinutes();
-        next();
-    })
+    // socket.use((packet, next) => {
+
+    //     next();
+    // })
 
     socket.on('room.list', () => {
         socket.emit('room.list.response', rooms);
