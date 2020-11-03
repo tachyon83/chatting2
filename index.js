@@ -1,42 +1,40 @@
+var rooms = require('./models/rooms')
+var profiles = require('./models/profiles')
+
 // const url = require('url');
 // const path = require('path'); // OS-independent
 const http = require('http');
 const bodyParser = require('body-parser')
-const static = require('serve-static');
+// const static = require('serve-static');
 const express = require('express');
 const session = require('express-session');
 
 const passport = require('passport');
-const passportConfig = require('./config/passportTest');
-const bcrypt = require('bcrypt');
+const passportConfig = require('./config/passportConfig');
 const flash = require('connect-flash')
 
+// connect-redis version must be somewhere around 3.#.#
+// const redis=require('redis')
 const RedisStore = require("connect-redis")(session);
 const client = require('./config/redisClient')
 
 // important: this [cors] must come before Router
 const cors = require('cors');
-
 // const router = express.Router();
 const router = require('./routes/router')
 const app = express();
 app.set('port', process.env.PORT || 3000);
 // app.set('view engine', 'html');
 app.set('view engine', 'ejs');
-// app.set('views', __dirname + '/views');
+// app.set('views', __dirname + '/');
 app.set('views', __dirname + '/html');
-
-const socketio = require('socket.io')
-
-var rooms = require('./models/rooms')
-var profiles = require('./models/profiles')
 
 const sessionIntoRedis = (session({
     secret: 'secret secretary',
     resave: false,
     saveUninitialized: false,
     store: new RedisStore({
-        client: client,
+        redisClient: client,
         ttl: 30,
         // host: 'localhost',
         // port: 6379,
@@ -47,30 +45,51 @@ const sessionIntoRedis = (session({
     }),
 }))
 
+// const bcrypt = require('bcrypt');
+// const saltRounds=10
+
 app.use(sessionIntoRedis)
 app.use(passport.initialize());
 app.use(passport.session());
-
 // flash는 내부적으로 session을 이용하기 때문에 session 보다 아래쪽에서 미들웨어를 설치
 app.use(flash())
 passportConfig();
 
-// app.use('/', static(__dirname + '/html/'));
+// app.use('/', static(__dirname));
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
 app.use('/', router);
 
+// router.get('/', (req, res) => {
+//     // console.log(req.isAuthenticated())
+//     // console.log(req.session.passport)
+//     // res.sendFile(path.join(__dirname + '/html/chat.html'));
+//     // res.sendFile(__dirname + '/views/index.ejs');
+//     // res.render('index', { locals: { username: req.session.key ? req.session.passport.user : null } })
+//     // res.render('index', { userId: req.isAuthenticated() ? req.session.passport.user : 0 })
+//     res.sendFile(__dirname + '/chatLobby.html')
+// })
+
 router.post('/profile/signin', passport.authenticate('local', {
     failureRedirect: '/profile/failure',
     failureFlash: true
 }), (req, res) => {
-    req.session.save(function () {
-        // console.log(req.user)
-        userMap[req.user.id] = null;
-        res.render('chat', { userId: req.session.passport.user ? req.session.passport.user : null })
-    })
+    userMap[req.user.id] = null;
+    // res.sendFile(__dirname + '/chatLobby.html')
+    res.render('chatLobby', { userId: req.session.passport.user })
+
+    // req.session.save(function () {
+    //     // console.log(req.user)
+    //     userMap[req.user.id] = null;
+    //     // res.render('chat', { userId: req.session.passport.user ? req.session.passport.user : null })
+    //     res.sendFile(__dirname + 'chatLobby.html')
+    // })
 })
+
+// router.get('/onlineUsers/list', (req, res) => {
+//     res.json(io.sockets.connected)
+// })
 router.get('/signout', (req, res) => {
     if (req.isAuthenticated()) {
         // console.log(io.sockets);
@@ -107,6 +126,7 @@ router.get('/signout', (req, res) => {
 var chatLogs = [];
 var userMap = {};
 var socketMap = {};
+var newRoomIdNum = 4;
 
 // important! middleware 사용법
 // app.get('/profile/success',middleware,function(req,res){
@@ -121,27 +141,29 @@ const server = http.createServer(app);
 server.listen(app.get('port'), () => {
     console.log('http://localhost:%d', app.get('port'));
 });
+
+const socketio = require('socket.io')
 const io = socketio.listen(server);
 io.use(function (socket, next) {
     sessionIntoRedis(socket.request, socket.request.res || {}, next);
 })
 
 io.on('connection', (socket) => {
-    socket.use((packet, next) => {
-        let currTime = new Date();
-        timestamp = currTime.getHours() + ':' + currTime.getMinutes();
-        // console.log(socket.request.session.passport)
-        if (socket.request.session.passport) return next();
-        socket.disconnect();
-        console.log('this session is expired')
-    })
+    // socket.use((packet, next) => {
+    //     let currTime = new Date();
+    //     timestamp = currTime.getHours() + ':' + currTime.getMinutes();
+    //     // console.log(socket.request.session.passport)
+    //     if (socket.request.session.passport) return next();
+    //     // socket.disconnect();
+    //     // console.log('this session is expired')
+    // })
     // socket.use(function(socket.request,socket.request.res,next){
     //     if(this.request.session.passport.user)socket.disconnect();
     //     next()
     // })
-    userMap[socket.request.session.passport.user] = socket.id
-    socketMap[socket.id] = socket.request.session.passport.user
-    console.log(socketMap[socket.id] + ' has been connected')
+    // userMap[socket.request.session.passport.user] = socket.id
+    // socketMap[socket.id] = socket.request.session.passport.user
+    // console.log(socketMap[socket.id] + ' has been connected')
 
     // console.log(socket.request.sessionID)
     // console.log(socket.request.session.passport.user)
@@ -157,6 +179,10 @@ io.on('connection', (socket) => {
 
     socket.on('room.list', () => {
         socket.emit('room.list.response', rooms);
+    })
+    socket.on('room.create', roomDTO => {
+        roomDTO.roomID = newRoomIdNum++
+        rooms[roomDTO.roomID] = roomDTO
     })
     socket.on('room.join', roomDTO => {
         let targetId = roomDTO.roomID
@@ -194,14 +220,14 @@ io.on('connection', (socket) => {
             io.to(targetId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         })
     })
-    socket.on('disconnect', () => {
-        let currRoomId = profiles[socketMap[socket.id]].status;
-        // if this socket is in a room, need to leave it as well        
-        if (currRoomId) {
-            rooms[currRoomId].roomCnt--;
-            profiles[socketMap[socket.id]].status = 0;
-            io.to(currRoomId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
-        }
-        console.log(socketMap[socket.id] + ' has been disconnected');
-    })
+    // socket.on('disconnect', () => {
+    //     let currRoomId = profiles[socketMap[socket.id]].status;
+    //     // if this socket is in a room, need to leave it as well        
+    //     if (currRoomId) {
+    //         rooms[currRoomId].roomCnt--;
+    //         profiles[socketMap[socket.id]].status = 0;
+    //         io.to(currRoomId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
+    //     }
+    //     console.log(socketMap[socket.id] + ' has been disconnected');
+    // })
 })

@@ -4,6 +4,9 @@
 // passport-google-oauth, passport-facebook, passport-twitter,
 // passport-kakao, passport-naver
 
+const bcrypt = require('bcrypt');
+const saltRounds = 10
+
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 // const MyTestModel = require('./models/MyTestModel');
@@ -47,6 +50,18 @@ module.exports = () => {
         // passReqToCallback:false,
         passReqToCallback: true,
     }, (req, id, pw, done) => {
+
+        // bcrypt
+        //     .genSalt(saltRounds)
+        //     .then(salt => {
+        //         console.log('salt: ', salt)
+        //         return bcrypt.hash(password, salt)
+        //     })
+        //     .then(hash => {
+        //         console.log('hash: ', hash)
+        //     })
+        //     .catch(err => console.error(err.message))
+
         // myTestModel.findById(id, (err, user) => {
         //     if (err) return done(err);
         //     // third parameter is optional and used only when
@@ -60,8 +75,10 @@ module.exports = () => {
         //     // })
         // })
 
-        if (!profiles[id]) return done(null, false, { message: "this ID does not exist" });
+        // if (!profiles[id]) return done(null, false, { message: "this ID does not exist" });
+        if (!profiles[id]) return done(null, false);
         if (profiles[id].pw == pw) return done(null, profiles[id]);
-        return done(null, false, { message: "password does not match" })
+        // return done(null, false, { message: "password does not match" })
+        return done(null, false)
     }))
 }
