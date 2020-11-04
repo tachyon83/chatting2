@@ -24,6 +24,7 @@
         //     })
         // }
         function roomListRefreshServerCall() {
+            // socket.emit('profile.list');
             socket.emit('room.list');
             // socket.on('room.list.response', roomsFromServer => {
             //     callback(roomsFromServer)
@@ -977,6 +978,10 @@
             created() {
                 this.$userId = "<%=userId%>"
 
+                this.$socket.on('profile.list.response', profilesFromServer => {
+                    this.usersList = profilesFromServer
+                })
+
                 this.$socket.on('room.list.response', roomsFromServer => {
                     this.roomItems = roomsFromServer
                 })
@@ -987,6 +992,7 @@
                 menulist
             },
             data: {
+                usersList: null,
                 userId: null,
                 showModal: false,
                 roomName: null,

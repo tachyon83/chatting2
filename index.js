@@ -177,6 +177,10 @@ io.on('connection', (socket) => {
     //     next();
     // })
 
+    socket.on('profile.list', () => {
+        socket.emit('profile.list.response', io.sockets.connected)
+    })
+
     socket.on('room.list', () => {
         socket.emit('room.list.response', rooms);
     })
