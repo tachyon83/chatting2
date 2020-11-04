@@ -51,6 +51,27 @@ module.exports = () => {
         passReqToCallback: true,
     }, (req, id, pw, done) => {
 
+        if (!profiles[id]) return done(null, false);
+        bcrypt.compare(pw, profiles[id].pw, (err, res) => {
+            if (res) return done(null, profiles[id])
+            return done(null, false)
+        })
+
+        // bcrypt.genSalt(saltRounds, (err, salt) => {
+        //     bcrypt.hash(pw, salt, (err, hash) => {
+        //         // hashed password
+        //         if (profiles[id].pw == hash) return done(null, profiles[id]);
+        //         // return done(null, false, { message: "password does not match" })
+        //         return done(null, false)
+
+        //     })
+        // })
+
+        // if (!profiles[id]) return done(null, false);
+        // if (profiles[id].pw == pw) return done(null, profiles[id]);
+        // // return done(null, false, { message: "password does not match" })
+        // return done(null, false)
+
         // bcrypt
         //     .genSalt(saltRounds)
         //     .then(salt => {
@@ -59,6 +80,8 @@ module.exports = () => {
         //     })
         //     .then(hash => {
         //         console.log('hash: ', hash)
+        //         if (profiles[id].pw == hash) return done(null, profiles[id])
+        //         return done(null, false)
         //     })
         //     .catch(err => console.error(err.message))
 
@@ -76,9 +99,9 @@ module.exports = () => {
         // })
 
         // if (!profiles[id]) return done(null, false, { message: "this ID does not exist" });
-        if (!profiles[id]) return done(null, false);
-        if (profiles[id].pw == pw) return done(null, profiles[id]);
-        // return done(null, false, { message: "password does not match" })
-        return done(null, false)
+        // if (!profiles[id]) return done(null, false);
+        // if (profiles[id].pw == pw) return done(null, profiles[id]);
+        // // return done(null, false, { message: "password does not match" })
+        // return done(null, false)
     }))
 }

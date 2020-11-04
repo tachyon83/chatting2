@@ -45,8 +45,8 @@ const sessionIntoRedis = (session({
     }),
 }))
 
-// const bcrypt = require('bcrypt');
-// const saltRounds=10
+const bcrypt = require('bcrypt');
+const saltRounds = 10
 
 app.use(sessionIntoRedis)
 app.use(passport.initialize());
@@ -70,6 +70,30 @@ app.use('/', router);
 //     // res.render('index', { userId: req.isAuthenticated() ? req.session.passport.user : 0 })
 //     res.sendFile(__dirname + '/chatLobby.html')
 // })
+
+router.post('/profile/register', (req, res) => {
+    let username = req.body.username
+    let password = req.body.password
+
+    bcrypt.genSalt(saltRounds, (err, salt) => {
+        bcrypt.hash(password, salt, (err, hash) => {
+            // hashed password
+            if (err) throw new Error(err)
+            profiles[username] = {
+                id: username,
+                pw: hash,
+                nick: null,
+                img: null,
+                status: -1,
+                friendsList: [],
+                banList: [],
+                socket_id: null,
+            }
+            console.log(profiles)
+            res.redirect('/')
+        })
+    })
+})
 
 router.post('/profile/signin', passport.authenticate('local', {
     failureRedirect: '/profile/failure',

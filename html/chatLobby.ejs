@@ -976,7 +976,7 @@
         new Vue({
             el: '.app-wrap',
             created() {
-                this.$userId = "<%=userId%>"
+                // this.userId = "<%=userId%>"
 
                 this.$socket.on('profile.list.response', profilesFromServer => {
                     this.usersList = profilesFromServer
@@ -993,7 +993,7 @@
             },
             data: {
                 usersList: null,
-                userId: null,
+                userId: "<%=userId%>",
                 showModal: false,
                 roomName: null,
                 roomUserCount: 1,
@@ -1068,7 +1068,7 @@
                         roomTitle: this.roomName,
                         roomCnt: 1,
                         roomCapacity: this.roomUserCount,
-                        roomOwner: this.$userId,
+                        roomOwner: this.userId,
                         // num: this.roomItems.length + 1,
                         // tit: this.roomName,
                         // own: 'test',
