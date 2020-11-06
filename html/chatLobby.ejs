@@ -9,13 +9,13 @@
     <meta name="keywords" content="" />
     <meta name="description" content="" />
     <meta name="author" content="" />
-    <!-- <link rel="stylesheet" href="src/main.css" /> -->
+    <!-- <link rel="stylesheet" type='text/css' href="../src/main.css" /> -->
     <script src="https://cdn.jsdelivr.net/npm/vue"></script>
     <script src='/socket.io/socket.io.js'></script>
     <script>
         const socket = io();
         Vue.prototype.$socket = socket
-        // Vue.prototype.$userId="<%=userId%>"
+
 
         // function roomListRefreshServerCall(callback) {
         //     socket.emit('room.list');
@@ -33,7 +33,7 @@
 
         // need to pause this while in a chat room
         // setInterval(() => { roomListRefreshServerCall(roomListRefresher) }, 2000);
-        setInterval(() => { roomListRefreshServerCall() }, 500);
+        // setInterval(() => { roomListRefreshServerCall() }, 500);
 
     </script>
     <style>
@@ -976,7 +976,6 @@
         new Vue({
             el: '.app-wrap',
             created() {
-                // this.userId = "<%=userId%>"
 
                 this.$socket.on('profile.list.response', profilesFromServer => {
                     this.usersList = profilesFromServer
@@ -993,11 +992,12 @@
             },
             data: {
                 usersList: null,
-                userId: "<%=userId%>",
+                userId: "<%=basicInfo.userId%>",
                 showModal: false,
                 roomName: null,
                 roomUserCount: 1,
-                roomItems: null,
+                // roomItems: null,
+                roomItems: "<%=basicInfo.rooms%>",
                 // [
                 //     {
                 //         num: 1,

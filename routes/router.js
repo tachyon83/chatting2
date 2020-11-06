@@ -14,7 +14,13 @@ router.get('/', (req, res) => {
 router.get('/signin', (req, res) => {
     if (req.isAuthenticated()) {
         // res.render('chat', { userId: req.session.passport.user })
-        res.render('chatLobby', { userId: req.session.passport.user })
+        // res.render('chatLobby', { userId: req.session.passport.user })
+        res.render('chatLobby', {
+            basicInfo: {
+                userId: req.session.passport.user,
+                rooms: rooms,
+            }
+        })
         // res.sendFile(path.join(__dirname, 'html', 'chatLobby.html'))
         // res.sendFile(path.resolve('/', '/chatLobby.html'))
     }
@@ -24,7 +30,13 @@ router.get('/signin', (req, res) => {
 router.get('/profile/signin', (req, res) => {
     if (req.isAuthenticated()) {
         // res.render('chat', { userId: req.session.passport.user })
-        res.render('chatLobby', { userId: req.session.passport.user })
+        // res.render('chatLobby', { userId: req.session.passport.user })
+        res.render('chatLobby', {
+            basicInfo: {
+                userId: req.session.passport.user,
+                rooms: rooms,
+            }
+        })
         // res.sendFile(path.join(__dirname, 'html', 'chatLobby.html'))
     }
     else res.render('signin')

@@ -5,7 +5,7 @@ var profiles = require('./models/profiles')
 // const path = require('path'); // OS-independent
 const http = require('http');
 const bodyParser = require('body-parser')
-// const static = require('serve-static');
+const static = require('serve-static');
 const express = require('express');
 const session = require('express-session');
 
@@ -17,6 +17,11 @@ const flash = require('connect-flash')
 // const redis=require('redis')
 const RedisStore = require("connect-redis")(session);
 const client = require('./config/redisClient')
+
+const WatchJS = require("melanke-watchjs")
+const watch = WatchJS.watch;
+var unwatch = WatchJS.unwatch;
+var callWatchers = WatchJS.callWatchers;
 
 // important: this [cors] must come before Router
 const cors = require('cors');
@@ -55,7 +60,7 @@ app.use(passport.session());
 app.use(flash())
 passportConfig();
 
-// app.use('/', static(__dirname));
+app.use('/html', static(__dirname + '/html'));
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
@@ -89,7 +94,7 @@ router.post('/profile/register', (req, res) => {
                 banList: [],
                 socket_id: null,
             }
-            console.log(profiles)
+            // console.log(profiles)
             res.redirect('/')
         })
     })
@@ -101,7 +106,12 @@ router.post('/profile/signin', passport.authenticate('local', {
 }), (req, res) => {
     userMap[req.user.id] = null;
     // res.sendFile(__dirname + '/chatLobby.html')
-    res.render('chatLobby', { userId: req.session.passport.user })
+    res.render('chatLobby', {
+        basicInfo: {
+            userId: req.session.passport.user,
+            rooms: rooms,
+        }
+    })
 
     // req.session.save(function () {
     //     // console.log(req.user)
@@ -205,10 +215,18 @@ io.on('connection', (socket) => {
         socket.emit('profile.list.response', io.sockets.connected)
     })
 
-    socket.on('room.list', () => {
+    // socket.on('room.list', () => {
+    //     socket.emit('room.list.response', rooms);
+    // })
+
+    watch(rooms, () => {
+        console.log('rooms changed')
         socket.emit('room.list.response', rooms);
     })
+
+
     socket.on('room.create', roomDTO => {
+        console.log('new room created')
         roomDTO.roomID = newRoomIdNum++
         rooms[roomDTO.roomID] = roomDTO
     })
