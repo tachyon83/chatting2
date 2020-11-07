@@ -1,5 +1,12 @@
 var rooms = require('./models/rooms')
+console.log('rooms right after import', rooms)
+var roomNum = {
+    cnt: Object.keys(rooms).length + 1
+}
 var profiles = require('./models/profiles')
+var chatLogs = [];
+var userMap = {};
+var socketMap = {};
 
 // const url = require('url');
 // const path = require('path'); // OS-independent
@@ -68,7 +75,7 @@ app.use(sessionIntoRedis)
 app.use(flash())
 passportConfig();
 
-// app.use('/html', static(__dirname + '/html'));
+app.use('/html', express.static(__dirname + '/html'));
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
@@ -134,7 +141,8 @@ router.post('/profile/signin', passport.authenticate('local', {
     failureFlash: true
 }), (req, res) => {
     console.log('came from serialization maybe?')
-    console.log(req.session.passport)
+    console.log('session ID', req.session.id)
+    console.log('passport after router.post(profile.signin),passport.authenticate', req.session.passport)
     userMap[req.user.id] = null;
     // res.sendFile(__dirname + '/chatLobby.html')
     res.render('chatLobby', {
@@ -188,11 +196,6 @@ router.get('/signout', (req, res) => {
 // friend list, group list, room list
 // person info (id,chat_room_id, room, group, level )
 
-var chatLogs = [];
-var userMap = {};
-var socketMap = {};
-var newRoomIdNum = 4;
-
 // important! middleware 사용법
 // app.get('/profile/success',middleware,function(req,res){
 //     res.send(req.user);
@@ -210,13 +213,30 @@ server.listen(app.get('port'), () => {
 const socketio = require('socket.io');
 const io = socketio.listen(server);
 
-watch(rooms, () => {
-    console.log('[rooms]changes made')
+watch(roomNum, () => {
+    console.log('watched: a new room made')
     io.to(0).emit('room.list.response', rooms)
 })
+watch(rooms, () => {
+    console.log('watched: [rooms]changes made')
+    io.to(0).emit('room.list.response', rooms)
+})
+// watch(rooms, [rooms, roomNum], () => {
+//     console.log('watched: [rooms]changes made')
+//     io.to(0).emit('room.list.response', rooms)
+// })
+
 io.use((socket, next) => {
     console.log('io middle')
     sessionIntoRedis(socket.request, socket.request.res || {}, next);
+})
+io.use((socket, next) => {
+    redisClient.get('sess:' + socket.request.session.id, (err, value) => {
+        if (err) throw err;
+        console.log('redisClient.get', value)
+        console.log('socket.session.id', socket.request.session.id)
+    })
+    next();
 })
 
 var timestamp = null;
@@ -230,8 +250,11 @@ io.on('connection', (socket) => {
         socket.disconnect();
         console.log('this session is expired')
     })
-    console.log('userMap', userMap)
-    console.log('socket.req.session', socket.request.session)
+    // console.log('userMap', userMap)
+    // console.log('socket.req.session', socket.request.session)
+
+    // socket.name might be able to replace socketMap
+    console.log('socket.name', socket.name)
     userMap[socket.request.session.passport.user] = socket.id
     socketMap[socket.id] = socket.request.session.passport.user
     socket.join(0, () => {
@@ -248,11 +271,14 @@ io.on('connection', (socket) => {
     })
 
     socket.on('room.create', roomDTO => {
-        console.log(socket.request.session.passport)
+        console.log('passport in room.create', socket.request.session.passport)
         console.log('new room created')
-        roomDTO.roomID = newRoomIdNum++
+        console.log('rooms inside socket.on.room.create', rooms)
+        roomDTO.roomID = roomNum.cnt
         rooms[roomDTO.roomID] = roomDTO
-        rooms.cnt++
+        console.log(rooms)
+        roomNum.cnt++
+        console.log(roomNum.cnt)
     })
     socket.on('room.join', roomDTO => {
         let targetId = roomDTO.roomID
