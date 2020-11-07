@@ -11,6 +11,9 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 // const MyTestModel = require('./models/MyTestModel');
 // const myTestModel = new MyTestModel();
+// const profiles] is not needed because it will have been imported where this passportConfig is imported
+// no, that is not true
+// maybe then, profiles is newly imported everytime this file is executed
 const profiles = require('../models/profiles')
 
 module.exports = () => {
@@ -22,6 +25,8 @@ module.exports = () => {
     passport.serializeUser((user, done) => {
         // req.session.passport.user에 저장
         // done(null, user.pID);
+        // console.log('inside serialize', req.session.passport.user)<-not possible
+        console.log('now serialized')
         done(null, user.id);
     })
     passport.deserializeUser((id, done) => {
@@ -53,37 +58,20 @@ module.exports = () => {
 
         if (!profiles[id]) return done(null, false);
         bcrypt.compare(pw, profiles[id].pw, (err, res) => {
-            if (res) return done(null, profiles[id])
+            // console.log('inside passportConfig', profiles)
+            if (res) {
+                console.log('inside passporconfig.bcrypt.cmpare.authenticated')
+                return done(null, profiles[id])
+            }
             return done(null, false)
         })
 
-        // bcrypt.genSalt(saltRounds, (err, salt) => {
-        //     bcrypt.hash(pw, salt, (err, hash) => {
-        //         // hashed password
-        //         if (profiles[id].pw == hash) return done(null, profiles[id]);
-        //         // return done(null, false, { message: "password does not match" })
-        //         return done(null, false)
 
-        //     })
-        // })
 
         // if (!profiles[id]) return done(null, false);
         // if (profiles[id].pw == pw) return done(null, profiles[id]);
         // // return done(null, false, { message: "password does not match" })
         // return done(null, false)
-
-        // bcrypt
-        //     .genSalt(saltRounds)
-        //     .then(salt => {
-        //         console.log('salt: ', salt)
-        //         return bcrypt.hash(password, salt)
-        //     })
-        //     .then(hash => {
-        //         console.log('hash: ', hash)
-        //         if (profiles[id].pw == hash) return done(null, profiles[id])
-        //         return done(null, false)
-        //     })
-        //     .catch(err => console.error(err.message))
 
         // myTestModel.findById(id, (err, user) => {
         //     if (err) return done(err);

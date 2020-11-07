@@ -976,12 +976,17 @@
         new Vue({
             el: '.app-wrap',
             created() {
+                this.userId = "<%=basicInfo.userId%>"
+                console.log(this.userId)
+                this.roomItems = "<%=basicInfo.rooms%>"
+                console.log(this.roomItems)
 
                 this.$socket.on('profile.list.response', profilesFromServer => {
                     this.usersList = profilesFromServer
                 })
 
                 this.$socket.on('room.list.response', roomsFromServer => {
+                    console.log('received')
                     this.roomItems = roomsFromServer
                 })
             },
@@ -992,35 +997,11 @@
             },
             data: {
                 usersList: null,
-                userId: "<%=basicInfo.userId%>",
+                userId: null,
                 showModal: false,
                 roomName: null,
                 roomUserCount: 1,
-                // roomItems: null,
-                roomItems: "<%=basicInfo.rooms%>",
-                // [
-                //     {
-                //         num: 1,
-                //         tit: '제목입니다',
-                //         own: '방방장장',
-                //         userNowNum: 3,
-                //         userNum: 5
-                //     },
-                //     {
-                //         num: 2,
-                //         tit: '제목입니sasdsafasfasfsaf다',
-                //         own: '방장',
-                //         userNowNum: 43,
-                //         userNum: 50
-                //     },
-                //     {
-                //         num: 3,
-                //         tit: '제입니다',
-                //         own: '방장장',
-                //         userNowNum: 1,
-                //         userNum: 3
-                //     }
-                // ],
+                roomItems: null,
                 groupItems: [
                     {
                         tit: 'User',
@@ -1075,6 +1056,7 @@
                         // userNowNum: 0,
                         // userNum: this.roomUserCount
                     }
+                    console.log('about to create a new room')
                     this.$socket.emit('room.create', newRoom)
                     // this.roomItems.push(newRoom)
                     this.resetNewRoomModal()

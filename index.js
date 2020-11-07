@@ -5,7 +5,7 @@ var profiles = require('./models/profiles')
 // const path = require('path'); // OS-independent
 const http = require('http');
 const bodyParser = require('body-parser')
-const static = require('serve-static');
+// const static = require('serve-static');
 const express = require('express');
 const session = require('express-session');
 
@@ -14,14 +14,16 @@ const passportConfig = require('./config/passportConfig');
 const flash = require('connect-flash')
 
 // connect-redis version must be somewhere around 3.#.#
-// const redis=require('redis')
+// now upgraded to 5.0.0
+// const redis = require('redis')
 const RedisStore = require("connect-redis")(session);
-const client = require('./config/redisClient')
+const redisClient = require('./config/redisClient');
+// const redisClient = redis.createClient();
 
 const WatchJS = require("melanke-watchjs")
 const watch = WatchJS.watch;
-var unwatch = WatchJS.unwatch;
-var callWatchers = WatchJS.callWatchers;
+// var unwatch = WatchJS.unwatch;
+// var callWatchers = WatchJS.callWatchers;
 
 // important: this [cors] must come before Router
 const cors = require('cors');
@@ -39,7 +41,7 @@ const sessionIntoRedis = (session({
     resave: false,
     saveUninitialized: false,
     store: new RedisStore({
-        redisClient: client,
+        client: redisClient,
         ttl: 30,
         // host: 'localhost',
         // port: 6379,
@@ -50,17 +52,23 @@ const sessionIntoRedis = (session({
     }),
 }))
 
+// app.use(session({
+//     store: new RedisStore({ client: redisClient }),
+//     secret: 'keyboard cat',
+//     resave: false,
+// }))
+
 const bcrypt = require('bcrypt');
 const saltRounds = 10
 
-app.use(sessionIntoRedis)
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(sessionIntoRedis)
 // flash는 내부적으로 session을 이용하기 때문에 session 보다 아래쪽에서 미들웨어를 설치
 app.use(flash())
 passportConfig();
 
-app.use('/html', static(__dirname + '/html'));
+// app.use('/html', static(__dirname + '/html'));
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
@@ -80,10 +88,12 @@ router.post('/profile/register', (req, res) => {
     let username = req.body.username
     let password = req.body.password
 
-    bcrypt.genSalt(saltRounds, (err, salt) => {
-        bcrypt.hash(password, salt, (err, hash) => {
-            // hashed password
-            if (err) throw new Error(err)
+    bcrypt
+        .genSalt(saltRounds)
+        .then(salt => {
+            return bcrypt.hash(password, salt)
+        })
+        .then(hash => {
             profiles[username] = {
                 id: username,
                 pw: hash,
@@ -94,16 +104,37 @@ router.post('/profile/register', (req, res) => {
                 banList: [],
                 socket_id: null,
             }
-            // console.log(profiles)
+            // console.log('inside index profiles', profiles)
             res.redirect('/')
         })
-    })
+        .catch(err => console.error(err.message))
+
+    // bcrypt.genSalt(saltRounds, (err, salt) => {
+    //     bcrypt.hash(password, salt, (err, hash) => {
+    //         // hashed password
+    //         if (err) throw new Error(err)
+    //         profiles[username] = {
+    //             id: username,
+    //             pw: hash,
+    //             nick: null,
+    //             img: null,
+    //             status: -1,
+    //             friendsList: [],
+    //             banList: [],
+    //             socket_id: null,
+    //         }
+    //         // console.log(profiles)
+    //         res.redirect('/')
+    //     })
+    // })
 })
 
 router.post('/profile/signin', passport.authenticate('local', {
     failureRedirect: '/profile/failure',
     failureFlash: true
 }), (req, res) => {
+    console.log('came from serialization maybe?')
+    console.log(req.session.passport)
     userMap[req.user.id] = null;
     // res.sendFile(__dirname + '/chatLobby.html')
     res.render('chatLobby', {
@@ -176,59 +207,52 @@ server.listen(app.get('port'), () => {
     console.log('http://localhost:%d', app.get('port'));
 });
 
-const socketio = require('socket.io')
+const socketio = require('socket.io');
 const io = socketio.listen(server);
-io.use(function (socket, next) {
+
+watch(rooms, () => {
+    console.log('[rooms]changes made')
+    io.to(0).emit('room.list.response', rooms)
+})
+io.use((socket, next) => {
+    console.log('io middle')
     sessionIntoRedis(socket.request, socket.request.res || {}, next);
 })
 
-io.on('connection', (socket) => {
-    // socket.use((packet, next) => {
-    //     let currTime = new Date();
-    //     timestamp = currTime.getHours() + ':' + currTime.getMinutes();
-    //     // console.log(socket.request.session.passport)
-    //     if (socket.request.session.passport) return next();
-    //     // socket.disconnect();
-    //     // console.log('this session is expired')
-    // })
-    // socket.use(function(socket.request,socket.request.res,next){
-    //     if(this.request.session.passport.user)socket.disconnect();
-    //     next()
-    // })
-    // userMap[socket.request.session.passport.user] = socket.id
-    // socketMap[socket.id] = socket.request.session.passport.user
-    // console.log(socketMap[socket.id] + ' has been connected')
+var timestamp = null;
 
-    // console.log(socket.request.sessionID)
-    // console.log(socket.request.session.passport.user)
+io.on('connection', (socket) => {
+
+    socket.use((packet, next) => {
+        let currTime = new Date();
+        timestamp = currTime.getHours() + ':' + currTime.getMinutes();
+        if (socket.request.session.passport) return next();
+        socket.disconnect();
+        console.log('this session is expired')
+    })
+    console.log('userMap', userMap)
+    console.log('socket.req.session', socket.request.session)
+    userMap[socket.request.session.passport.user] = socket.id
+    socketMap[socket.id] = socket.request.session.passport.user
+    socket.join(0, () => {
+        // rooms[0].roomCnt = io.sockets.adapter.rooms[0].length
+        // profiles[socketMap[socket.id]].status = 0;
+        console.log('joined')
+    });
+    console.log(socketMap[socket.id] + ' has been connected')
 
     // socket.use('chat',(packet,next)=>{
-
-    var timestamp = null
-
-    // socket.use((packet, next) => {
-
-    //     next();
-    // })
 
     socket.on('profile.list', () => {
         socket.emit('profile.list.response', io.sockets.connected)
     })
 
-    // socket.on('room.list', () => {
-    //     socket.emit('room.list.response', rooms);
-    // })
-
-    watch(rooms, () => {
-        console.log('rooms changed')
-        socket.emit('room.list.response', rooms);
-    })
-
-
     socket.on('room.create', roomDTO => {
+        console.log(socket.request.session.passport)
         console.log('new room created')
         roomDTO.roomID = newRoomIdNum++
         rooms[roomDTO.roomID] = roomDTO
+        rooms.cnt++
     })
     socket.on('room.join', roomDTO => {
         let targetId = roomDTO.roomID

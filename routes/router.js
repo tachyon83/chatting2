@@ -55,6 +55,7 @@ router.get('/profile/signin', (req, res) => {
 //     res.render('chat', { userId: req.session.passport.user ? req.session.passport.user : null })
 // })
 router.route('/profile/failure').get((req, res) => {
+    console.log('in profile/failure')
     // res.sendFile(__dirname + "/html/signin.html")
     res.render('signin')
 })

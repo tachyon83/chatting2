@@ -1,4 +1,5 @@
 var rooms = {
+    cnt: 3,
     1: {
         roomID: 1,
         roomPW: null,
