@@ -179,8 +179,12 @@
         new Vue({
             el: '.app-wrap',
             created() {
-                this.userId = "<%=basicInfo.userId%>"
-                this.roomItems = "<%=basicInfo.rooms%>"
+
+                this.userId = JSON.parse('<%-basicInfo %>').userId
+                this.roomItems = JSON.parse('<%-basicInfo %>').rooms
+                console.log(this.userId)
+                console.log(this.roomItems)
+                console.log(this.roomItems[1])
 
                 this.$socket.on('profile.list.response', profilesFromServer => {
                     this.usersList = profilesFromServer
@@ -188,6 +192,7 @@
 
                 this.$socket.on('room.list.response', roomsFromServer => {
                     console.log('received')
+                    console.log(roomsFromServer)
                     this.roomItems = roomsFromServer
                 })
             },
@@ -202,7 +207,7 @@
                 showModal: false,
                 roomName: null,
                 roomUserCount: 1,
-                roomItems: "<%=basicInfo.rooms%>",
+                roomItems: null,
                 groupItems: [
                     {
                         tit: 'User',

@@ -7,19 +7,20 @@
     <title>index.ejs</title>
     <script>
         window.onload = function () {
-            var username = "<%=userId%>"
-            username = parseInt(username)
+            var prevDiv = document.getElementById('prev')
             var btn = document.getElementsByTagName('button')[0]
             var nextRoute = null
-            console.log(username)
-            if (username === 0) {
-                console.log('zero')
-                btn.innerText = 'signin'
-                nextRoute = '/signin'
-            } else {
-                console.log('nonzero')
+
+            const basicInfo = JSON.parse('<%-basicInfo %>')
+
+            if (basicInfo.userId) {
+                prevDiv.children.item[0] = basicInfo.userId
+                prevDiv.children.item[1] = basicInfo.roomNumber
                 btn.innerText = 'signout'
-                nextRoute = '/signout'
+                nextRoute = '/user/signout'
+            } else {
+                btn.innerText = 'signin'
+                nextRoute = '/user/signinpage'
             }
 
             btn.addEventListener('click', () => {
@@ -34,11 +35,15 @@
 <body>
     <h1>this is main page (the first one)</h1>
     <button></button>
-    <form action='/profile/register' method='POST'>
+    <form action='/user/signup' method='POST'>
         username<input name='username' type='text'>
         password<input name='password' type='password'>
         <button type='submit'>submit</button>
     </form>
+    <div id='prev'>
+        <p></p>
+        <p></p>
+    </div>
 </body>
 
 </html>

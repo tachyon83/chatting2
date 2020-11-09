@@ -1,12 +1,17 @@
 var rooms = require('./models/rooms')
-console.log('rooms right after import', rooms)
-var roomNum = {
+var roomsCnt = {
     cnt: Object.keys(rooms).length + 1
 }
-var profiles = require('./models/profiles')
-var chatLogs = [];
-var userMap = {};
-var socketMap = {};
+var users = require('./models/users').users
+const addNewUser = require('./models/users').addNewUser
+var roomUsers = {
+    1: [],
+    2: [],
+}
+var onlineUsers = {}
+var onlineUsersCnt = {
+    cnt: Object.keys(onlineUsers).length + 1
+}
 
 // const url = require('url');
 // const path = require('path'); // OS-independent
@@ -25,7 +30,6 @@ const flash = require('connect-flash')
 // const redis = require('redis')
 const RedisStore = require("connect-redis")(session);
 const redisClient = require('./config/redisClient');
-// const redisClient = redis.createClient();
 
 const WatchJS = require("melanke-watchjs")
 const watch = WatchJS.watch;
@@ -34,13 +38,11 @@ const watch = WatchJS.watch;
 
 // important: this [cors] must come before Router
 const cors = require('cors');
-// const router = express.Router();
-const router = require('./routes/router')
+const router = express.Router();
+// const router = require('./routes/router')
 const app = express();
 app.set('port', process.env.PORT || 3000);
-// app.set('view engine', 'html');
 app.set('view engine', 'ejs');
-// app.set('views', __dirname + '/');
 app.set('views', __dirname + '/html');
 
 const sessionIntoRedis = (session({
@@ -81,17 +83,146 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json())
 app.use('/', router);
 
-// router.get('/', (req, res) => {
-//     // console.log(req.isAuthenticated())
-//     // console.log(req.session.passport)
-//     // res.sendFile(path.join(__dirname + '/html/chat.html'));
-//     // res.sendFile(__dirname + '/views/index.ejs');
-//     // res.render('index', { locals: { username: req.session.key ? req.session.passport.user : null } })
-//     // res.render('index', { userId: req.isAuthenticated() ? req.session.passport.user : 0 })
-//     res.sendFile(__dirname + '/chatLobby.html')
-// })
 
-router.post('/profile/register', (req, res) => {
+// 회원가입시에 users에 등록했을테니
+// 로그인시에는 users에 빼온다, 그리고 users에서 status변경
+const signInProcess = user => {
+    console.log('inside sign in process')
+
+    console.log('user in signInProcess', user)
+    console.log(users[user].status)
+    users[user].status = 0
+    onlineUsers[user] = users[user]
+    onlineUsersCnt.cnt++;
+}
+
+const checkIfAlreadySignedIn = (req, res, next) => {
+
+    /*
+        checkIfAlreadySignedIn 에서 아래 사항 처리
+            현재 로그인되어있는지 확인
+            로그인되어있을 시 (아이디와 방 위치 보여주기) 재접여부 확인 ('index'에서)
+            재접안하면 어디로 갈것인지? (일단은 대기실로 처리)
+            재접하면 해당 방으로 이동(방이 없으면 대기실로)
+            근데 여기서 또...원래 대기실이었으면 물어볼거 없이 그냥
+            바로 대기실로 가게 할지..? (일단은 그렇게 처리함)
+        
+            로그인된 세션이 있고 대기실에 있었다면 바로 lobby로 빼준다.
+            그렇지 않으면 'index'로 이동
+            프론트에서 [이전 위치]를 보여주거나 로그인/회원가입 화면 보여주기
+
+    going to be used in both '/' and '/user/signin'
+    the result would be two ways: lobby or exist
+    next() will be for the user not signed in before !
+
+    in '/user/signin', this middleware comes after passport
+    two cases: 
+    - case 1. from a different session(browser)
+    - case 2. from the same session, via a different tab
+
+    case 1: 
+        '/'에서는 기존 로그인된 다른 세션있어도 로그인을 새로 해야하는 상황
+        '/user/signin'에서도 마찬가지
+
+    case 2:
+        '/'에서는 바로 대기실로 가거나 원래 있던 채팅방으로 복귀할 지 묻는 창
+        (기존 세션 또는 소켓은 종료)
+        원래 대기실이었으면 그냥 바로 대기실로
+        case 2에서는 원래 로그인된 상태였다면
+        '/user/signin/'으로 들어가는 일이 없다. [post]만 받는다
+
+    같은 세션에서 왔다면, 기존 로그인이 있을 때 /user/signin으로 가는 경우는 없으므로
+    '/user/signin'으로 들어온 경우에는 다른 세션에서 들어왔다는 것이고,
+    로그인 인증을 거쳐야(passport.authenticate를 먼저 거쳐야) 기존 로그인이
+    있는지 없는지 확인이 된다.
+    */
+
+    console.log('now in the checkif middleware')
+
+    // need to define this basicInfo here otherwise there will be an error in ejs
+    res.locals.basicInfo = {
+        basicInfo: JSON.stringify({
+            userId: null,
+            rooms: null,
+        })
+    }
+    let user = null
+
+    /*
+        같은 세션에서 '/'로 들어왔을 때, 기존 로그인이 있는지 확인위해
+        세션체크가 필요하다.
+
+        하지만 다른 세션에서 'user/signin'으로 들어왔을 때는
+        passport를 거쳐서 일단 로그인을 해야한다. 하지만 이때는
+        passport를 통해 인증이 되었기에, session체크가
+        불필요하다. 그럼에도 불구하고 동일 미들웨어 사용을 위해 남겨두었다.
+
+        그래서 현재의 user가 이전에 있던 유저인지 아니면 새로 로그인한 유저인지
+        확인하고 위해 if (onlineUsers.hasOwnProperty(user)) 과정을
+        거쳐야 한다.
+        새로 들어온 유저라면 next()
+
+        유사하게, '/'를 통해 들어온 기존 유저는
+        if (onlineUsers.hasOwnProperty(user)) 과정이 불필요하다.
+        하지만 동일 미들웨어 사용을 위해 남겨두었다...
+
+    */
+    // if (req.isAuthenticated()) {
+    if (req.session.hasOwnProperty('passport')) {
+        console.log('this req has already been authenticated')
+        user = req.session.passport.user
+        console.log('user: ', user)
+        if (onlineUsers.hasOwnProperty(user)) {
+            if (onlineUsers[user].status != 0) {
+                res.locals.basicInfo = {
+                    basicInfo: JSON.stringify({
+                        userId: user,
+                        roomNumber: onlineUsers[user].status,
+                    })
+                }
+                res.render('index', res.locals.basicInfo)
+            } else {
+                res.locals.basicInfo = {
+                    basicInfo: JSON.stringify({
+                        userId: user,
+                        rooms: rooms,
+                    })
+                }
+                res.render('chatLobby', res.locals.basicInfo)
+            }
+            return
+            // 위에서 index나 lobby로 이동을 시켜주어야 한다. next()가
+            // 다를 수 있기 때문.
+        } else {
+            res.locals.basicInfo = {
+                basicInfo: JSON.stringify({
+                    userId: user,
+                    rooms: rooms,
+                })
+            }
+        }
+    }
+    next();
+}
+
+router.get('/', checkIfAlreadySignedIn, (req, res) => {
+    res.render('index', res.locals.basicInfo)
+})
+
+router.post('/user/signin', passport.authenticate('local', {
+    failureRedirect: '/user/signinpage',
+    failureFlash: true
+}), checkIfAlreadySignedIn, (req, res) => {
+    console.log('came from serialization maybe?')
+    console.log('session ID', req.session.id)
+    console.log('passport after router.post(profile.signin),passport.authenticate', req.session.passport)
+    console.log(res.locals.basicInfo)
+
+    signInProcess(req.session.passport.user)
+    res.render('chatLobby', res.locals.basicInfo)
+})
+
+router.post('/user/signup', (req, res) => {
     let username = req.body.username
     let password = req.body.password
 
@@ -101,17 +232,8 @@ router.post('/profile/register', (req, res) => {
             return bcrypt.hash(password, salt)
         })
         .then(hash => {
-            profiles[username] = {
-                id: username,
-                pw: hash,
-                nick: null,
-                img: null,
-                status: -1,
-                friendsList: [],
-                banList: [],
-                socket_id: null,
-            }
-            // console.log('inside index profiles', profiles)
+            users[username] = addNewUser(username, hash)
+            // console.log('inside index users', users)
             res.redirect('/')
         })
         .catch(err => console.error(err.message))
@@ -120,7 +242,7 @@ router.post('/profile/register', (req, res) => {
     //     bcrypt.hash(password, salt, (err, hash) => {
     //         // hashed password
     //         if (err) throw new Error(err)
-    //         profiles[username] = {
+    //         users[username] = {
     //             id: username,
     //             pw: hash,
     //             nick: null,
@@ -130,34 +252,14 @@ router.post('/profile/register', (req, res) => {
     //             banList: [],
     //             socket_id: null,
     //         }
-    //         // console.log(profiles)
+    //         // console.log(users)
     //         res.redirect('/')
     //     })
     // })
 })
 
-router.post('/profile/signin', passport.authenticate('local', {
-    failureRedirect: '/profile/failure',
-    failureFlash: true
-}), (req, res) => {
-    console.log('came from serialization maybe?')
-    console.log('session ID', req.session.id)
-    console.log('passport after router.post(profile.signin),passport.authenticate', req.session.passport)
-    userMap[req.user.id] = null;
-    // res.sendFile(__dirname + '/chatLobby.html')
-    res.render('chatLobby', {
-        basicInfo: {
-            userId: req.session.passport.user,
-            rooms: rooms,
-        }
-    })
-
-    // req.session.save(function () {
-    //     // console.log(req.user)
-    //     userMap[req.user.id] = null;
-    //     // res.render('chat', { userId: req.session.passport.user ? req.session.passport.user : null })
-    //     res.sendFile(__dirname + 'chatLobby.html')
-    // })
+router.get('/user/signinpage', (req, res) => {
+    res.render('signin')
 })
 
 // router.get('/onlineUsers/list', (req, res) => {
@@ -211,9 +313,10 @@ server.listen(app.get('port'), () => {
 });
 
 const socketio = require('socket.io');
+const { json } = require('express')
 const io = socketio.listen(server);
 
-watch(roomNum, () => {
+watch(roomsCnt, () => {
     console.log('watched: a new room made')
     io.to(0).emit('room.list.response', rooms)
 })
@@ -221,7 +324,7 @@ watch(rooms, () => {
     console.log('watched: [rooms]changes made')
     io.to(0).emit('room.list.response', rooms)
 })
-// watch(rooms, [rooms, roomNum], () => {
+// watch(rooms, [rooms, roomCnt], () => {
 //     console.log('watched: [rooms]changes made')
 //     io.to(0).emit('room.list.response', rooms)
 // })
@@ -255,14 +358,14 @@ io.on('connection', (socket) => {
 
     // socket.name might be able to replace socketMap
     console.log('socket.name', socket.name)
-    userMap[socket.request.session.passport.user] = socket.id
-    socketMap[socket.id] = socket.request.session.passport.user
+    // userMap[socket.request.session.passport.user] = socket.id
+    // socketMap[socket.id] = socket.request.session.passport.user
     socket.join(0, () => {
         // rooms[0].roomCnt = io.sockets.adapter.rooms[0].length
-        // profiles[socketMap[socket.id]].status = 0;
+        // users[socketMap[socket.id]].status = 0;
         console.log('joined')
     });
-    console.log(socketMap[socket.id] + ' has been connected')
+    // console.log(socketMap[socket.id] + ' has been connected')
 
     // socket.use('chat',(packet,next)=>{
 
@@ -274,11 +377,11 @@ io.on('connection', (socket) => {
         console.log('passport in room.create', socket.request.session.passport)
         console.log('new room created')
         console.log('rooms inside socket.on.room.create', rooms)
-        roomDTO.roomID = roomNum.cnt
+        roomDTO.roomID = roomsCnt.cnt
         rooms[roomDTO.roomID] = roomDTO
         console.log(rooms)
-        roomNum.cnt++
-        console.log(roomNum.cnt)
+        roomsCnt.cnt++
+        console.log(roomsCnt.cnt)
     })
     socket.on('room.join', roomDTO => {
         let targetId = roomDTO.roomID
@@ -299,29 +402,29 @@ io.on('connection', (socket) => {
 
             socket.join(targetId, () => {
                 rooms[targetId].roomCnt = io.sockets.adapter.rooms[targetId].length
-                profiles[socketMap[socket.id]].status = targetId;
+                users[socketMap[socket.id]].status = targetId;
                 io.to(targetId).emit('system.welcome', { packet: socketMap[socket.id], timestamp: timestamp });
             });
         } else socket.emit('room.join.response', false);
     })
     socket.on('chat.public', chatDTO => {
         // messages.push({ 'name': msg.name, 'message': msg.txt });
-        if (!chatDTO.to) io.to(profiles[chatDTO.from].status).emit('chat.public', { packet: chatDTO, timestamp: timestamp });
+        if (!chatDTO.to) io.to(users[chatDTO.from].status).emit('chat.public', { packet: chatDTO, timestamp: timestamp });
     })
     socket.on('room.leave', roomDTO => {
         let targetId = roomDTO.roomID
         socket.leave(targetId, () => {
             rooms[targetId].roomCnt--;
-            profiles[socketMap[socket.id]].status = 0;
+            users[socketMap[socket.id]].status = 0;
             io.to(targetId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         })
     })
     // socket.on('disconnect', () => {
-    //     let currRoomId = profiles[socketMap[socket.id]].status;
+    //     let currRoomId = users[socketMap[socket.id]].status;
     //     // if this socket is in a room, need to leave it as well        
     //     if (currRoomId) {
     //         rooms[currRoomId].roomCnt--;
-    //         profiles[socketMap[socket.id]].status = 0;
+    //         users[socketMap[socket.id]].status = 0;
     //         io.to(currRoomId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
     //     }
     //     console.log(socketMap[socket.id] + ' has been disconnected');

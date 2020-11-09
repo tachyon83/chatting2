@@ -5,16 +5,16 @@
 // passport-kakao, passport-naver
 
 const bcrypt = require('bcrypt');
-const saltRounds = 10
+// const saltRounds = 10
 
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 // const MyTestModel = require('./models/MyTestModel');
 // const myTestModel = new MyTestModel();
-// const profiles] is not needed because it will have been imported where this passportConfig is imported
+// const users] is not needed because it will have been imported where this passportConfig is imported
 // no, that is not true
-// maybe then, profiles is newly imported everytime this file is executed
-const profiles = require('../models/profiles')
+// maybe then, users is newly imported everytime this file is executed
+const users = require('../models/users').users
 
 module.exports = () => {
 
@@ -36,10 +36,10 @@ module.exports = () => {
         //     done(null, user);
         // })
 
-        // if authenticated (profiles[id]), 
+        // if authenticated (users[id]), 
         // console.log('deserialize called and req.user is registered')
 
-        if (profiles[id]) return done(null, profiles[id]);
+        if (users[id]) return done(null, users[id]);
         else return done(null, null)
 
 
@@ -56,20 +56,20 @@ module.exports = () => {
         passReqToCallback: true,
     }, (req, id, pw, done) => {
 
-        if (!profiles[id]) return done(null, false);
-        bcrypt.compare(pw, profiles[id].pw, (err, res) => {
-            // console.log('inside passportConfig', profiles)
+        if (!users[id]) return done(null, false);
+        bcrypt.compare(pw, users[id].pw, (err, res) => {
+            // console.log('inside passportConfig', users)
             if (res) {
                 console.log('inside passporconfig.bcrypt.cmpare.authenticated')
-                return done(null, profiles[id])
+                return done(null, users[id])
             }
             return done(null, false)
         })
 
 
 
-        // if (!profiles[id]) return done(null, false);
-        // if (profiles[id].pw == pw) return done(null, profiles[id]);
+        // if (!users[id]) return done(null, false);
+        // if (users[id].pw == pw) return done(null, users[id]);
         // // return done(null, false, { message: "password does not match" })
         // return done(null, false)
 
@@ -86,9 +86,9 @@ module.exports = () => {
         //     // })
         // })
 
-        // if (!profiles[id]) return done(null, false, { message: "this ID does not exist" });
-        // if (!profiles[id]) return done(null, false);
-        // if (profiles[id].pw == pw) return done(null, profiles[id]);
+        // if (!users[id]) return done(null, false, { message: "this ID does not exist" });
+        // if (!users[id]) return done(null, false);
+        // if (users[id].pw == pw) return done(null, users[id]);
         // // return done(null, false, { message: "password does not match" })
         // return done(null, false)
     }))
