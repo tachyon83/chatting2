@@ -1,3 +1,6 @@
+// join date, group name, pw hint, title?(room owner)
+// login time, logout time
+
 module.exports = {
     users: {
         chris: {
@@ -8,7 +11,7 @@ module.exports = {
             status: -1,
             friendsList: [],
             banList: [],
-            socket_id: null,
+            socketId: null,
         },
         paul: {
             id: 'paul',
@@ -18,7 +21,7 @@ module.exports = {
             status: 0,
             friendsList: [],
             banList: [],
-            socket_id: null,
+            socketId: null,
         },
         tom: {
             id: 'tom',
@@ -28,7 +31,7 @@ module.exports = {
             status: 0,
             friendsList: [],
             banList: [],
-            socket_id: null,
+            socketId: null,
         },
         mary: {
             id: 'mary',
@@ -38,7 +41,7 @@ module.exports = {
             status: 0,
             friendsList: [],
             banList: [],
-            socket_id: null,
+            socketId: null,
         },
         jane: {
             id: 'jane',
@@ -48,7 +51,7 @@ module.exports = {
             status: 0,
             friendsList: [],
             banList: [],
-            socket_id: null,
+            socketId: null,
         },
         alice: {
             id: 'alice',
@@ -58,7 +61,7 @@ module.exports = {
             status: 0,
             friendsList: [],
             banList: [],
-            socket_id: null,
+            socketId: null,
         }
     },
     addNewUser: (id, pw) => {
@@ -70,7 +73,7 @@ module.exports = {
             status: -1,
             friendsList: [],
             banList: [],
-            socket_id: null,
+            socketId: null,
         }
     }
 };

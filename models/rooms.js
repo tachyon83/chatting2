@@ -1,6 +1,8 @@
+// 방 생성시각 관리 필요
+
 var rooms = {
     1: {
-        roomID: 1,
+        roomId: 1,
         roomPW: null,
         roomTitle: '조용한 방',
         roomCnt: 4,
@@ -8,7 +10,7 @@ var rooms = {
         roomOwner: '홍길동'
     },
     2: {
-        roomID: 2,
+        roomId: 2,
         roomPW: null,
         roomTitle: '시끄러운 방',
         roomCnt: 2,
@@ -16,7 +18,7 @@ var rooms = {
         roomOwner: '시끌이'
     },
     3: {
-        roomID: 3,
+        roomId: 3,
         roomPW: null,
         roomTitle: '말많은 방',
         roomCnt: 1,

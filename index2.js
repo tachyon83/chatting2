@@ -137,16 +137,14 @@ app.use('/', router);
 
 // [방 나가기 함수]는 세션종료를 의미하지 않는다.
 // 방을 나가는 과정만 관리한다.
-const roomLeaveProcess = async user => {
+const roomLeaveProcess = user => {
 
     let userSocketId = onlineUsers[user].socketId
     let currRoom = onlineUsers[user].status
-    // onlineUsers[user].status = (currRoom === 0) ? -1 : 0
-    onlineUsers[user].status = 0
+    onlineUsers[user].status = (currRoom === 0) ? -1 : 0
     if (currRoom === 0) {
-        // delete onlineUsers[user]
-        // onlineUsersCnt.cnt--;
-        return
+        delete onlineUsers[user]
+        onlineUsersCnt.cnt--;
     }
 
     io.sockets[userSocketId].leave(currRoom, () => {
@@ -168,24 +166,24 @@ const roomLeaveProcess = async user => {
 
         */
 
-        // if (currRoom != 0) {
-        if (rooms[currRoom].roomCnt == 1) {
-            // 아직 유저정보에 타이틀/직위(방장)에 관한 정보는 없다.
-            delete rooms[currRoom]
-            delete roomUsers[currRoom]
-            roomsCnt.cnt--
-        } else {
-            delete roomUsers[currRoom][user]
-            rooms[currRoom].roomCnt--
-            if (rooms[currRoom].roomOwner == user) {
-                // 위에서 roomUsers에서 기존 방장은 삭제했기에 바로 다음 사람으로 위임 가능
-                for (let nextPerson in roomUsers[currRoom]) {
-                    rooms[currRoom].roomOwner = nextPerson
-                    break
+        if (currRoom != 0) {
+            if (rooms[currRoom].roomCnt == 1) {
+                // 아직 유저정보에 타이틀/직위(방장)에 관한 정보는 없다.
+                delete rooms[currRoom]
+                delete roomUsers[currRoom]
+                roomsCnt.cnt--
+            } else {
+                delete roomUsers[currRoom][user]
+                rooms[currRoom].roomCnt--
+                if (rooms[currRoom].roomOwner == user) {
+                    // 위에서 roomUsers에서 기존 방장은 삭제했기에 바로 다음 사람으로 위임 가능
+                    for (let nextPerson in roomUsers[currRoom]) {
+                        rooms[currRoom].roomOwner = nextPerson
+                        break
+                    }
                 }
             }
         }
-        // }
     })
 }
 
@@ -322,7 +320,18 @@ const checkIfAlreadySignedIn = (req, res, next) => {
         console.log('user: ', user)
         // io.sockets[onlineUsers[user].socketId].disconnect()
 
-        io.to(onlineUsers[user].socketId).emit('manualDisconnectByServer')
+        console.log('socketId to receive the manual disconnect event', onlineUsers[user].socketId)
+
+        // io.to(onlineUsers[user].socketId).emit('manualDisconnectByServer')
+        // io.sockets.connected[onlineUsers[user].socketId].emit('manualDisconnectByServer')
+        // io.sockets.socket(onlineUsers[user].socketId).emit('manualDisconnectByServer')
+        // console.log('broadcast', io.sockets.socket.broadcast)
+        // io.broadcast.to(onlineUsers[user].socketId).emit('manualDisconnectByServer')
+        console.log(io.sockets)
+        io.to(roomNumber).emit('manualDisconnectByServer');
+        // io.sockets.emit('manualDisconnectByServer')
+        // io.sockets.connected[onlineUsers[user].socketId].broadcast.to(onlineUsers[user].socketId).emit('manualDisconnectByServer')
+        // io.sockets.socket.broadcast.to(onlineUsers[user].socketId).emit('manualDisconnectByServer')
         // 해당 소켓 끊고 프론트로 정보 보내기
         // 현 세션에 다시 붙여주고 (같은 브라우저 내의 새 탭이었다면, 그냥 떼었다 붙이기...?)
 
@@ -405,20 +414,7 @@ const checkIfAlreadySignedIn = (req, res, next) => {
     next();
 }
 
-// router.get('/', checkIfAlreadySignedIn, (req, res) => {
-//     res.render('index', res.locals.basicInfo)
-// })
-
-router.get('/', (req, res, next) => {
-    if (req.session.passport) {
-        let user = req.session.passport.user
-        let userSocketId = onlineUsers[user].socketId
-        await roomLeaveProcess(user)
-        io.sockets[userSocketId].disconnect()
-
-    }
-    next()
-}, (req, res) => {
+router.get('/', checkIfAlreadySignedIn, (req, res) => {
     res.render('index', res.locals.basicInfo)
 })
 
@@ -583,6 +579,7 @@ io.on('connection', socket => {
 
     // socket.name might be able to replace socketMap
     console.log('socket.name', socket.name)
+    console.log('connected socket', socket.id)
     // userMap[socket.request.session.passport.user] = socket.id
     // socketMap[socket.id] = socket.request.session.passport.user
     socket.join(socket.request.session.currRoom, () => {
@@ -661,20 +658,20 @@ io.on('connection', socket => {
 
 
     })
-    // socket.on('disconnect', () => {
-    //     // let currRoomId = users[socketMap[socket.id]].status;
-    //     // // if this socket is in a room, need to leave it as well        
-    //     // if (currRoomId) {
-    //     //     rooms[currRoomId].roomCnt--;
-    //     //     users[socketMap[socket.id]].status = 0;
-    //     //     io.to(currRoomId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
-    //     // }
+    socket.on('disconnect', () => {
+        // let currRoomId = users[socketMap[socket.id]].status;
+        // // if this socket is in a room, need to leave it as well        
+        // if (currRoomId) {
+        //     rooms[currRoomId].roomCnt--;
+        //     users[socketMap[socket.id]].status = 0;
+        //     io.to(currRoomId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
+        // }
 
-    //     let disconnectedUser = socket.request.session.passport.user
-    //     signOutProcess(disconnectedUser)
-    //     console.log(disconnectedUser + ' has been disconnected');
-    //     socket.request.session.destroy(err => {
-    //         if (err) throw err
-    //     })
-    // })
+        let disconnectedUser = socket.request.session.passport.user
+        signOutProcess(disconnectedUser)
+        console.log(disconnectedUser + ' has been disconnected');
+        socket.request.session.destroy(err => {
+            if (err) throw err
+        })
+    })
 })

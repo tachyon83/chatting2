@@ -61,6 +61,8 @@ module.exports = () => {
             // console.log('inside passportConfig', users)
             if (res) {
                 console.log('inside passporconfig.bcrypt.cmpare.authenticated')
+                console.log('before going into serialize, does session has passport?', req.session.hasOwnProperty('passport'))
+                console.log('direct access to passport', req.session.passport)
                 return done(null, users[id])
             }
             return done(null, false)

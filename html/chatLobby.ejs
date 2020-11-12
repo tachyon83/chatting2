@@ -182,6 +182,7 @@
 
                 this.userId = JSON.parse('<%-basicInfo %>').userId
                 this.roomItems = JSON.parse('<%-basicInfo %>').rooms
+                console.log('currRoom: ', JSON.parse('<%-basicInfo %>').roomNumber)
                 console.log(this.userId)
                 console.log(this.roomItems)
                 console.log(this.roomItems[1])
@@ -250,8 +251,8 @@
                 },
                 createRoom: function () {
                     const newRoom = {
-                        roomID: null,
-                        roomPW: null,
+                        roomId: null,
+                        roomPw: null,
                         roomTitle: this.roomName,
                         roomCnt: 1,
                         roomCapacity: this.roomUserCount,
