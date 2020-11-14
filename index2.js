@@ -322,6 +322,8 @@ const checkIfAlreadySignedIn = (req, res, next) => {
 
         console.log('socketId to receive the manual disconnect event', onlineUsers[user].socketId)
 
+        // 현재화면에서 재접속| 로그아웃 (소켓을 받을 것인지 판단)
+
         // io.to(onlineUsers[user].socketId).emit('manualDisconnectByServer')
         // io.sockets.connected[onlineUsers[user].socketId].emit('manualDisconnectByServer')
         // io.sockets.socket(onlineUsers[user].socketId).emit('manualDisconnectByServer')
