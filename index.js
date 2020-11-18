@@ -8,6 +8,8 @@ var roomsCnt = {
 }
 var users = require('./models/users').users
 const addNewUser = require('./models/users').addNewUser
+
+// 0번방은 없다
 var roomUsers = {
     1: {},
     2: {},
@@ -136,6 +138,7 @@ app.use('/', router);
 
 
 // [방 나가기 함수]는 세션종료를 의미하지 않는다.
+// 소켓도 끊지 않는다.
 // 방을 나가는 과정만 관리한다.
 const roomLeaveProcess = async user => {
 
@@ -149,12 +152,13 @@ const roomLeaveProcess = async user => {
         return
     }
 
-    io.sockets[userSocketId].leave(currRoom, () => {
+    return io.sockets[userSocketId].leave(currRoom, () => {
         /*
             방을 선택하지 않았어도 대기실(0번방)에는 첫 시작에 join한다
             그래서 항상 leave할 수 있다.
 
             roomUsers안에는 0번방이 없다.
+            현재 0번방이면 나가는 처리 없이 바로 리턴한다.
             프론트로 보내주는 유저리스트는 onlineUsers이고,
             방에 있는 유저에게 보내는 유저리스트는 roomUsers[roomId]
             대기실에 있는 유저에게 보내는 방 리스트는 rooms
@@ -206,7 +210,7 @@ const signInProcess = user => {
 // 로그아웃을 통해 이 함수를 부르는 것이 아니다.
 // 로그아웃이 버튼이 눌리면 프론트에서 manually 소켓을 끊어주게 되고,
 // 소켓이 끊어지는 이벤트에서 아래 함수가 호출된다.
-const signOutProcess = user => {
+const signOutProcess = async user => {
 
     // 여기서 먼저 소켓 관련 처리도 마무리해주고,
     // 소켓이벤트에서는 해당 property 존재 여부 확인 후 처리한다.
@@ -224,7 +228,7 @@ const signOutProcess = user => {
             session?
     */
 
-    roomLeaveProcess(user)
+    // roomLeaveProcess(user)
     delete onlineUsers[user]
     onlineUsersCnt.cnt--;
 
@@ -409,41 +413,69 @@ const checkIfAlreadySignedIn = (req, res, next) => {
 //     res.render('index', res.locals.basicInfo)
 // })
 
-router.get('/', (req, res, next) => {
-    if (req.session.passport) {
-        let user = req.session.passport.user
-        let userSocketId = onlineUsers[user].socketId
-        await roomLeaveProcess(user)
-        io.sockets[userSocketId].disconnect()
+router.get('/', (req, res) => {
 
+    // 다른 세션에서 접근해서 로그인했을 때,(로그인을 성공했으니)
+    // 기존 로그인이 있었다면, 로비페이지로 가는게 맞다.<-아니다! 수정필요
+    // 로그인 성공 후 기존 로그인이 있었다면 여기로 다시 온다
+    // 그러므로 여기서도 동일 세션일 시 로비페이지로 이동한다.
+
+    // res.locals.basicInfo = {
+    //     basicInfo: {
+    //         userId: null,
+    //         rooms: rooms,
+    //         alreadySignedIn:false,
+    //     }
+    // }
+
+    if (req.session.passport && onlineUsers[req.session.passport.user]) {
+
+        // let basicInfo = JSON.stringify({
+        //     userId: req.session.passport.user,
+        //     roomNumber: 'roomNumber Not Necessary?',
+        // })
+        res.locals.basicInfo
+        res.render('index', { user: req.session.passport.user })
+        return;
     }
-    next()
-}, (req, res) => {
-    res.render('index', res.locals.basicInfo)
+    res.render('index', { user: null })
 })
 
 router.post('/user/signin', passport.authenticate('local', {
-    failureRedirect: '/user/signinpage',
+    failureRedirect: '/',
     failureFlash: true
 }), (req, res, next) => {
     console.log('right after serialization, passport?', req.session.hasOwnProperty('passport'))
     // 여기서 다른 세션에서 왔으니 기존 소켓 끊어주기 필요
     next()
-},
-    checkIfAlreadySignedIn, (req, res) => {
-        console.log('came from serialization maybe?')
-        console.log('session ID', req.session.id)
-        console.log('passport after router.post(profile.signin),passport.authenticate', req.session.passport)
-        console.log(res.locals.basicInfo)
+}, (req, res) => {
 
-        req.session.save(() => {
-            signInProcess(req.session.passport.user)
-            console.log('onlineUsers', onlineUsers)
-            console.log('passport in session.save', req.session.passport)
+    console.log('came from serialization maybe?')
+    console.log('session ID', req.session.id)
+    console.log('passport after router.post(profile.signin),passport.authenticate', req.session.passport)
+    console.log(res.locals.basicInfo)
 
-            res.render('chatLobby', res.locals.basicInfo)
+    let user = req.session.passport.user
+
+    res.locals.basicInfo = {
+        basicInfo: JSON.stringify({
+            userId: user,
+            rooms: rooms,
+            alreadySignedIn: (onlineUsers[user]) ? true : false,
         })
+    }
+    if (onlineUsers[user]) {
+        // res.render('index', res.locals.basicInfo)
+        res.redirect('/')
+        return;
+    }
+    req.session.save(() => {
+        signInProcess(user)
+        console.log('onlineUsers', onlineUsers)
+        console.log('passport in session.save', req.session.passport)
+        res.render('chatLobby', res.locals.basicInfo)
     })
+})
 
 router.post('/user/signup', (req, res) => {
     let username = req.body.username
@@ -459,13 +491,30 @@ router.post('/user/signup', (req, res) => {
         .then(hash => {
             users[username] = addNewUser(username, hash)
             // console.log('inside index users', users)
-            res.redirect('/user/signinpage')
+            // res.redirect('/')
+            res.render('index', { user: null })
         })
         .catch(err => console.error(err.message))
 })
 
-router.get('/user/signinpage', (req, res) => {
-    res.render('signin')
+router.get('/user/signout/:user', (req, res) => {
+    let user = req.params.user
+    let socketId = onlineUsers[user].socketId
+    let socket = io.sockets.connected[socketId]
+
+    req.session.destroy()
+        .then(() => {
+            if (req.session.id != socket.request.session.id) {
+                return socket.request.session.destroy()
+            } return
+        })
+        .then(() => { return socket.emit('system.disconnect', user) })
+        .then(() => { res.render('index', { user: null }) })
+        .catch(err => console.error(err.message))
+})
+
+router.get('/user/signuppage', (req, res) => {
+    res.render('signup')
 })
 
 // router.get('/onlineUsers/list', (req, res) => {
@@ -644,6 +693,20 @@ io.on('connection', socket => {
             users[socketMap[socket.id]].status = 0;
             io.to(targetId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         })
+    })
+
+    socket.on('system.disconnect', user => {
+        return roomLeaveProcess(user)
+            .then(() => { return signOutProcess(user) })
+            .then(() => { return socket.disconnect() })
+            .catch(err => console.error(err.message))
+    })
+
+    socket.on('manualDisconnect', user => {
+        let socketId = onlineUsers[user].socketId
+
+        io.sockets.connected[socketId].disconnect();
+
     })
 
     socket.on('manualDisconnectByServer', () => {

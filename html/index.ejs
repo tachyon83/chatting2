@@ -7,23 +7,32 @@
     <title>index.ejs</title>
     <script>
         window.onload = function () {
-            var prevDiv = document.getElementById('prev')
-            var btn = document.getElementsByTagName('button')[0]
-            var nextRoute = null
+            const loginForm = document.getElementById('loginForm')
+            const prevDiv = document.getElementById('prev')
+            const signoutBtn = document.getElementById('signoutBtn')
+            const signupBtn = document.getElementById('signupBtn')
+            let nextRoute = null
 
-            const basicInfo = JSON.parse('<%-basicInfo %>')
+            const user = "<%=user%>"
 
-            if (basicInfo.userId) {
-                prevDiv.children.item[0] = basicInfo.userId
-                prevDiv.children.item[1] = basicInfo.roomNumber
-                btn.innerText = 'signout'
-                nextRoute = '/user/signout'
+            if (user) {
+                loginForm.style.display = 'none'
+                prevDiv.innerText = user + ' 접속중'
+                // prevDiv.children.item[1] = basicInfo.roomNumber
+                signoutBtn.innerText = 'signout'
+                nextRoute = '/user/signout/'
             } else {
-                btn.innerText = 'signin'
-                nextRoute = '/user/signinpage'
+                // btn.innerText = 'signin'
+                // nextRoute = '/user/signin'
+                signoutBtn.style.display = 'none'
+                nextRoute = '/user/signuppage/'
             }
 
-            btn.addEventListener('click', () => {
+            signoutBtn.addEventListener('click', () => {
+                window.location.replace(nextRoute + user)
+            })
+            signupBtn.addEventListener('click', () => {
+                console.log('signupBtn clicked')
                 window.location.replace(nextRoute)
             })
             // const urlParams = new URLSearchParams(window.location.search);
@@ -34,15 +43,21 @@
 
 <body>
     <h1>this is main page (the first one)</h1>
-    <button></button>
-    <form action='/user/signup' method='POST'>
+    <form id='loginForm' action='/user/signin' method='POST'>
+        username<input name='username' type='text'>
+        password<input name='password' type='password'>
+        <button type='submit'>signin</button>
+    </form>
+    <hr>
+    <button id='signoutBtn'></button>
+    <button id='signupBtn'>signup</button>
+    <!-- <form action='/user/signup' method='POST'>
+        signup
         username<input name='username' type='text'>
         password<input name='password' type='password'>
         <button type='submit'>submit</button>
-    </form>
+    </form> -->
     <div id='prev'>
-        <p></p>
-        <p></p>
     </div>
 </body>
 
