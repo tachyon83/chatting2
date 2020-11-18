@@ -140,56 +140,64 @@ app.use('/', router);
 // [방 나가기 함수]는 세션종료를 의미하지 않는다.
 // 소켓도 끊지 않는다.
 // 방을 나가는 과정만 관리한다.
-const roomLeaveProcess = async user => {
+const roomLeaveProcess = user => {
+    return new Promise((resolve, reject) => {
 
-    let userSocketId = onlineUsers[user].socketId
-    let currRoom = onlineUsers[user].status
-    // onlineUsers[user].status = (currRoom === 0) ? -1 : 0
-    onlineUsers[user].status = 0
-    if (currRoom === 0) {
-        // delete onlineUsers[user]
-        // onlineUsersCnt.cnt--;
-        return
-    }
+        console.log(onlineUsers[user])
 
-    return io.sockets[userSocketId].leave(currRoom, () => {
-        /*
-            방을 선택하지 않았어도 대기실(0번방)에는 첫 시작에 join한다
-            그래서 항상 leave할 수 있다.
+        let userSocketId = onlineUsers[user].socketId
+        let currRoom = onlineUsers[user].status
+        // onlineUsers[user].status = (currRoom === 0) ? -1 : 0
+        onlineUsers[user].status = 0
+        if (currRoom === 0) {
+            // delete onlineUsers[user]
+            // onlineUsersCnt.cnt--;
+            console.log('this user was in lobby')
+            resolve();
+            return
+        }
 
-            roomUsers안에는 0번방이 없다.
-            현재 0번방이면 나가는 처리 없이 바로 리턴한다.
-            프론트로 보내주는 유저리스트는 onlineUsers이고,
-            방에 있는 유저에게 보내는 유저리스트는 roomUsers[roomId]
-            대기실에 있는 유저에게 보내는 방 리스트는 rooms
+        console.log('this user was in a room')
+        io.sockets[userSocketId].leave(currRoom, () => {
+            /*
+                방을 선택하지 않았어도 대기실(0번방)에는 첫 시작에 join한다
+                그래서 항상 leave할 수 있다.
+    
+                roomUsers안에는 0번방이 없다.
+                현재 0번방이면 나가는 처리 없이 바로 리턴한다.
+                프론트로 보내주는 유저리스트는 onlineUsers이고,
+                방에 있는 유저에게 보내는 유저리스트는 roomUsers[roomId]
+                대기실에 있는 유저에게 보내는 방 리스트는 rooms
+    
+                cases:
+                    그룹이...있구나...
+                    - 방에 혼자있었을 경우 (해당 소켓은 자동으로 방장이란 뜻)
+                    - 방에 혼자가 아닌 경우:
+                        - 자신이 방장
+                        - 자신은 방장이 아님
+    
+            */
 
-            cases:
-                그룹이...있구나...
-                - 방에 혼자있었을 경우 (해당 소켓은 자동으로 방장이란 뜻)
-                - 방에 혼자가 아닌 경우:
-                    - 자신이 방장
-                    - 자신은 방장이 아님
-
-        */
-
-        // if (currRoom != 0) {
-        if (rooms[currRoom].roomCnt == 1) {
-            // 아직 유저정보에 타이틀/직위(방장)에 관한 정보는 없다.
-            delete rooms[currRoom]
-            delete roomUsers[currRoom]
-            roomsCnt.cnt--
-        } else {
-            delete roomUsers[currRoom][user]
-            rooms[currRoom].roomCnt--
-            if (rooms[currRoom].roomOwner == user) {
-                // 위에서 roomUsers에서 기존 방장은 삭제했기에 바로 다음 사람으로 위임 가능
-                for (let nextPerson in roomUsers[currRoom]) {
-                    rooms[currRoom].roomOwner = nextPerson
-                    break
+            // if (currRoom != 0) {
+            if (rooms[currRoom].roomCnt == 1) {
+                // 아직 유저정보에 타이틀/직위(방장)에 관한 정보는 없다.
+                delete rooms[currRoom]
+                delete roomUsers[currRoom]
+                roomsCnt.cnt--
+            } else {
+                delete roomUsers[currRoom][user]
+                rooms[currRoom].roomCnt--
+                if (rooms[currRoom].roomOwner == user) {
+                    // 위에서 roomUsers에서 기존 방장은 삭제했기에 바로 다음 사람으로 위임 가능
+                    for (let nextPerson in roomUsers[currRoom]) {
+                        rooms[currRoom].roomOwner = nextPerson
+                        break
+                    }
                 }
             }
-        }
-        // }
+            // }
+            resolve()
+        })
     })
 }
 
@@ -210,7 +218,7 @@ const signInProcess = user => {
 // 로그아웃을 통해 이 함수를 부르는 것이 아니다.
 // 로그아웃이 버튼이 눌리면 프론트에서 manually 소켓을 끊어주게 되고,
 // 소켓이 끊어지는 이벤트에서 아래 함수가 호출된다.
-const signOutProcess = async user => {
+const signOutProcess = user => {
 
     // 여기서 먼저 소켓 관련 처리도 마무리해주고,
     // 소켓이벤트에서는 해당 property 존재 여부 확인 후 처리한다.
@@ -229,6 +237,7 @@ const signOutProcess = async user => {
     */
 
     // roomLeaveProcess(user)
+    onlineUsers[user].socketId = null
     delete onlineUsers[user]
     onlineUsersCnt.cnt--;
 
@@ -434,7 +443,7 @@ router.get('/', (req, res) => {
         //     userId: req.session.passport.user,
         //     roomNumber: 'roomNumber Not Necessary?',
         // })
-        res.locals.basicInfo
+        // res.locals.basicInfo
         res.render('index', { user: req.session.passport.user })
         return;
     }
@@ -499,18 +508,53 @@ router.post('/user/signup', (req, res) => {
 
 router.get('/user/signout/:user', (req, res) => {
     let user = req.params.user
+    console.log(user)
     let socketId = onlineUsers[user].socketId
     let socket = io.sockets.connected[socketId]
+    let sessionId = req.session.id
+    let socketSession = socket.request.session
 
-    req.session.destroy()
-        .then(() => {
-            if (req.session.id != socket.request.session.id) {
-                return socket.request.session.destroy()
-            } return
+    roomLeaveProcess(user).then(_ => {
+        console.log('roomLeaveProcess done')
+        signOutProcess(user)
+        socket.disconnect();
+        console.log('socket disconnected')
+        // console.log(socket)
+    })
+    watch(onlineUsers[user], () => {
+        console.log('socket disconnection and user socketId deleted')
+        req.session.destroy(_ => {
+            if (sessionId != socketSession.id) socketSession.destroy(_ => {
+                res.render('index', { user: null })
+            })
+            else {
+                res.render('index', { user: null })
+            }
         })
-        .then(() => { return socket.emit('system.disconnect', user) })
-        .then(() => { res.render('index', { user: null }) })
-        .catch(err => console.error(err.message))
+    })
+    // req.session.destroy(() => {
+    //     if (sessionId != socket.request.session.id) {
+    //         socket.request.session.destroy(() => {
+    //             await socket.disconnect();
+    //             // socket.emit('system.disconnect', user)
+    //             res.render('index', { user: null })
+    //         })
+    //     } else {
+    //         await socket.disconnect();
+    //         // socket.emit('system.disconnect', user)
+    //         res.render('index', { user: null })
+    //     }
+    // })
+
+    // req.session.destroy()
+    //     .then(() => {
+    //         if (req.session.id != socket.request.session.id) {
+    //             return socket.request.session.destroy()
+    //         } return
+    //     })
+    //     .then(() => { return socket.emit('system.disconnect', user) })
+    //     .then(() => { res.render('index', { user: null }) })
+    //     .catch(err => console.error(err.message))
 })
 
 router.get('/user/signuppage', (req, res) => {
@@ -583,6 +627,7 @@ server.listen(app.get('port'), () => {
 });
 
 const socketio = require('socket.io');
+const { resolve } = require('path')
 // const { json } = require('express')
 const io = socketio.listen(server);
 
@@ -617,7 +662,7 @@ var timestamp = null;
 io.on('connection', socket => {
     socket.name = socket.request.session.passport.user
     console.log('now name attached', socket.name)
-    users[socket.name].socketId = socket.id
+    onlineUsers[socket.name].socketId = socket.id
 
     socket.use((packet, next) => {
         let currTime = new Date();
@@ -695,19 +740,20 @@ io.on('connection', socket => {
         })
     })
 
-    socket.on('system.disconnect', user => {
-        return roomLeaveProcess(user)
-            .then(() => { return signOutProcess(user) })
-            .then(() => { return socket.disconnect() })
-            .catch(err => console.error(err.message))
-    })
+    // socket.on('system.disconnect', user => {
+    //     socket.disconnect();
+    //     // return roomLeaveProcess(user)
+    //     //     .then(() => { return signOutProcess(user) })
+    //     //     .then(() => { return socket.disconnect() })
+    //     //     .catch(err => console.error(err.message))
+    // })
 
-    socket.on('manualDisconnect', user => {
-        let socketId = onlineUsers[user].socketId
+    // socket.on('manualDisconnect', user => {
+    //     let socketId = onlineUsers[user].socketId
 
-        io.sockets.connected[socketId].disconnect();
+    //     io.sockets.connected[socketId].disconnect();
 
-    })
+    // })
 
     socket.on('manualDisconnectByServer', () => {
 
@@ -733,11 +779,14 @@ io.on('connection', socket => {
     //     //     io.to(currRoomId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
     //     // }
 
-    //     let disconnectedUser = socket.request.session.passport.user
-    //     signOutProcess(disconnectedUser)
-    //     console.log(disconnectedUser + ' has been disconnected');
-    //     socket.request.session.destroy(err => {
-    //         if (err) throw err
+    //     let user = socket.request.session.passport.user
+    //     roomLeaveProcess(user).then(_ => {
+    //         signOutProcess(user)
+    //         console.log(user + ' has been disconnected');
     //     })
+
+    //     // socket.request.session.destroy(err => {
+    //     //     if (err) throw err
+    //     // })
     // })
 })
