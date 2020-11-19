@@ -188,13 +188,19 @@
                 console.log(this.roomItems[1])
 
                 this.$socket.on('profile.list.response', profilesFromServer => {
+                    // $socket.on('profile.list.response', profilesFromServer => {
                     this.usersList = profilesFromServer
                 })
 
                 this.$socket.on('room.list.response', roomsFromServer => {
-                    console.log('received')
+                    // $socket.on('room.list.response', roomsFromServer => {
+                    console.log('fresh room list received')
                     console.log(roomsFromServer)
                     this.roomItems = roomsFromServer
+                })
+
+                this.$socket.on('disconnect', _ => {
+                    // window.location.replace('/')
                 })
             },
             components: {

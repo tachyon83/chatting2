@@ -506,12 +506,38 @@ router.post('/user/signup', (req, res) => {
         .catch(err => console.error(err.message))
 })
 
+router.get('/user/resignin/:user', (req, res) => {
+    let user = req.params.user
+    let socketId = onlineUsers[user].socketId
+    let socket = io.sockets.connected[socketId]
+    let socketSession = (socket.request.session.id == req.session.id) ? null : socket.request.session
+
+    res.locals.basicInfo = {
+        basicInfo: JSON.stringify({
+            userId: user,
+            rooms: rooms,
+            roomNumber: 0,
+        })
+    }
+    console.log('resignin process on going')
+
+    roomLeaveProcess(user).then(_ => {
+        socket.disconnect();
+        // onlineUsers[user].socketId = null
+        if (socketSession) {
+            socketSession.destroy(_ => {
+                res.render('chatLobby', res.locals.basicInfo)
+            })
+        } else res.render('chatLobby', res.locals.basicInfo)
+    })
+})
+
 router.get('/user/signout/:user', (req, res) => {
     let user = req.params.user
     console.log(user)
     let socketId = onlineUsers[user].socketId
     let socket = io.sockets.connected[socketId]
-    let sessionId = req.session.id
+    let session = req.session
     let socketSession = socket.request.session
 
     roomLeaveProcess(user).then(_ => {
@@ -520,41 +546,13 @@ router.get('/user/signout/:user', (req, res) => {
         socket.disconnect();
         console.log('socket disconnected')
         // console.log(socket)
-    })
-    watch(onlineUsers[user], () => {
-        console.log('socket disconnection and user socketId deleted')
         req.session.destroy(_ => {
-            if (sessionId != socketSession.id) socketSession.destroy(_ => {
+            if (session.id != socketSession.id) socketSession.destroy(_ => {
                 res.render('index', { user: null })
             })
-            else {
-                res.render('index', { user: null })
-            }
+            else res.render('index', { user: null })
         })
     })
-    // req.session.destroy(() => {
-    //     if (sessionId != socket.request.session.id) {
-    //         socket.request.session.destroy(() => {
-    //             await socket.disconnect();
-    //             // socket.emit('system.disconnect', user)
-    //             res.render('index', { user: null })
-    //         })
-    //     } else {
-    //         await socket.disconnect();
-    //         // socket.emit('system.disconnect', user)
-    //         res.render('index', { user: null })
-    //     }
-    // })
-
-    // req.session.destroy()
-    //     .then(() => {
-    //         if (req.session.id != socket.request.session.id) {
-    //             return socket.request.session.destroy()
-    //         } return
-    //     })
-    //     .then(() => { return socket.emit('system.disconnect', user) })
-    //     .then(() => { res.render('index', { user: null }) })
-    //     .catch(err => console.error(err.message))
 })
 
 router.get('/user/signuppage', (req, res) => {
@@ -627,13 +625,15 @@ server.listen(app.get('port'), () => {
 });
 
 const socketio = require('socket.io');
-const { resolve } = require('path')
+// const { resolve } = require('path')
 // const { json } = require('express')
 const io = socketio.listen(server);
 
 watch(roomsCnt, () => {
     console.log('watched: a new room made')
+    // console.log('io.in(0)', io.in(0))
     io.to(0).emit('room.list.response', rooms)
+    console.log('maybe emitted')
 })
 watch(rooms, () => {
     console.log('watched: [rooms]changes made')
@@ -679,7 +679,8 @@ io.on('connection', socket => {
     console.log('socket.name', socket.name)
     // userMap[socket.request.session.passport.user] = socket.id
     // socketMap[socket.id] = socket.request.session.passport.user
-    socket.join(socket.request.session.currRoom, () => {
+    // socket.join(socket.request.session.currRoom, () => {
+    socket.join(0, () => {
         // rooms[0].roomCnt = io.sockets.adapter.rooms[0].length
         // users[socketMap[socket.id]].status = 0;
         console.log('joined')
@@ -739,6 +740,11 @@ io.on('connection', socket => {
             io.to(targetId).emit('system.farewell', { packet: socketMap[socket.id], timestamp: timestamp })
         })
     })
+
+    // maybe not receivable (the socket cannot receive the event emitted from the same socket itself)
+    // socket.on('room.list.response', rooms => {
+    //     console.log('the watch room list refresh event actually occurred')
+    // })
 
     // socket.on('system.disconnect', user => {
     //     socket.disconnect();

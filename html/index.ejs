@@ -9,6 +9,7 @@
         window.onload = function () {
             const loginForm = document.getElementById('loginForm')
             const prevDiv = document.getElementById('prev')
+            const reloginBtn = document.getElementById('reloginBtn')
             const signoutBtn = document.getElementById('signoutBtn')
             const signupBtn = document.getElementById('signupBtn')
             let nextRoute = null
@@ -19,21 +20,28 @@
                 loginForm.style.display = 'none'
                 prevDiv.innerText = user + ' 접속중'
                 // prevDiv.children.item[1] = basicInfo.roomNumber
+                reloginBtn.innerText = '이 페이지에서 접속'
                 signoutBtn.innerText = 'signout'
-                nextRoute = '/user/signout/'
+
             } else {
                 // btn.innerText = 'signin'
                 // nextRoute = '/user/signin'
+                reloginBtn.style.display = 'none'
                 signoutBtn.style.display = 'none'
-                nextRoute = '/user/signuppage/'
+                // nextRoute = '/user/signuppage/'
             }
 
+            reloginBtn.addEventListener('click', _ => {
+                window.location.replace('/user/resignin/' + user)
+            })
+
             signoutBtn.addEventListener('click', () => {
-                window.location.replace(nextRoute + user)
+                window.location.replace('/user/signout/' + user)
             })
             signupBtn.addEventListener('click', () => {
                 console.log('signupBtn clicked')
-                window.location.replace(nextRoute)
+                // window.location.replace(nextRoute)
+                window.location.replace('/user/signuppage/')
             })
             // const urlParams = new URLSearchParams(window.location.search);
             // const mypID = urlParams.get('pID');
@@ -49,6 +57,7 @@
         <button type='submit'>signin</button>
     </form>
     <hr>
+    <button id='reloginBtn'></button>
     <button id='signoutBtn'></button>
     <button id='signupBtn'>signup</button>
     <!-- <form action='/user/signup' method='POST'>
