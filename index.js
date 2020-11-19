@@ -521,15 +521,22 @@ router.get('/user/resignin/:user', (req, res) => {
     }
     console.log('resignin process on going')
 
-    roomLeaveProcess(user).then(_ => {
-        socket.disconnect();
-        // onlineUsers[user].socketId = null
-        if (socketSession) {
-            socketSession.destroy(_ => {
-                res.render('chatLobby', res.locals.basicInfo)
-            })
-        } else res.render('chatLobby', res.locals.basicInfo)
-    })
+    socket.disconnect()
+    if (socketSession) {
+        socketSession.destroy(_ => {
+            res.render('chatLobby', res.locals.basicInfo)
+        })
+    } else res.render('chatLobby', res.locals.basicInfo)
+
+    // roomLeaveProcess(user).then(_ => {
+    //     socket.disconnect();
+    //     // onlineUsers[user].socketId = null
+    //     if (socketSession) {
+    //         socketSession.destroy(_ => {
+    //             res.render('chatLobby', res.locals.basicInfo)
+    //         })
+    //     } else res.render('chatLobby', res.locals.basicInfo)
+    // })
 })
 
 router.get('/user/signout/:user', (req, res) => {
@@ -540,19 +547,29 @@ router.get('/user/signout/:user', (req, res) => {
     let session = req.session
     let socketSession = socket.request.session
 
-    roomLeaveProcess(user).then(_ => {
-        console.log('roomLeaveProcess done')
-        signOutProcess(user)
-        socket.disconnect();
-        console.log('socket disconnected')
-        // console.log(socket)
-        req.session.destroy(_ => {
-            if (session.id != socketSession.id) socketSession.destroy(_ => {
-                res.render('index', { user: null })
-            })
-            else res.render('index', { user: null })
+    socket.disconnect();
+    console.log('socket disconnected')
+    req.session.destroy(_ => {
+        signOutProcess(user);
+        if (session.id != socketSession.id) socketSession.destroy(_ => {
+            res.render('index', { user: null })
         })
+        else res.render('index', { user: null })
     })
+
+    // roomLeaveProcess(user).then(_ => {
+    //     console.log('roomLeaveProcess done')
+    //     signOutProcess(user)
+    //     socket.disconnect();
+    //     console.log('socket disconnected')
+    //     // console.log(socket)
+    //     req.session.destroy(_ => {
+    //         if (session.id != socketSession.id) socketSession.destroy(_ => {
+    //             res.render('index', { user: null })
+    //         })
+    //         else res.render('index', { user: null })
+    //     })
+    // })
 })
 
 router.get('/user/signuppage', (req, res) => {
@@ -776,6 +793,32 @@ io.on('connection', socket => {
 
 
     })
+
+    socket.on('disconnecting', reason => {
+        console.log(reason);
+        console.log(socket.request.session.passport)
+        console.log(socket.id)
+        console.log(io.sockets.adapter.rooms[0].length)
+
+        roomLeaveProcess(socket.name).then(_ => {
+            // if (reason == 'client namespace disconnect') {
+            if (reason == 'transport close') {
+                console.log('client disconnect!')
+                signOutProcess(socket.name)
+                socket.request.session.destroy()
+            }
+        })
+    })
+
+    // socket.on('disconnect', reason => {
+    //     console.log('reason in disconnect', reason)
+    // })
+
+    // socket.on('disconnect', () => {
+    //     console.log(socket.request.session.passport)
+    //     console.log(socket.id);
+    //     // console.log(io.sockets.adapter.rooms[0].length)
+    // })
     // socket.on('disconnect', () => {
     //     // let currRoomId = users[socketMap[socket.id]].status;
     //     // // if this socket is in a room, need to leave it as well        
