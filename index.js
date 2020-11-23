@@ -681,6 +681,8 @@ io.on('connection', socket => {
     console.log('now name attached', socket.name)
     onlineUsers[socket.name].socketId = socket.id
 
+    socket.emit('test')
+
     socket.use((packet, next) => {
         let currTime = new Date();
         timestamp = currTime.getHours() + ':' + currTime.getMinutes();

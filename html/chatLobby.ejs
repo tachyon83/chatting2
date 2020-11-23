@@ -187,6 +187,10 @@
                 console.log(this.roomItems)
                 console.log(this.roomItems[1])
 
+                this.$socket.on('test', () => {
+                    console.log('tested')
+                })
+
                 this.$socket.on('profile.list.response', profilesFromServer => {
                     // $socket.on('profile.list.response', profilesFromServer => {
                     this.usersList = profilesFromServer
