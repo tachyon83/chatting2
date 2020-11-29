@@ -501,6 +501,7 @@ router.post('/user/signup', (req, res) => {
             users[username] = addNewUser(username, hash)
             // console.log('inside index users', users)
             // res.redirect('/')
+            console.log(users[username])
             res.render('index', { user: null })
         })
         .catch(err => console.error(err.message))
