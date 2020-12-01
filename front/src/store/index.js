@@ -91,21 +91,22 @@ export default new Vuex.Store({
   //   socket,
   // },
   mutations: {
-    SOCKET_test(state, rooms) {
-      console.log('received')
-      console.log(rooms)
-      let data = 123
-      // state.roomDTO = rooms
-      // console.log('state.roomDTO', state.roomDTO)
-      // console.log('state.userDTO', state.userDTO)
-    }
+    // SOCKET_test(state, rooms) {
+    //   console.log('received')
+    //   console.log(rooms)
+    //   let data = 123
+    //   // state.roomDTO = rooms
+    //   // console.log('state.roomDTO', state.roomDTO)
+    //   // console.log('state.userDTO', state.userDTO)
+    // }
   },
   actions: {
-    // 'SOCKET_test'(rooms) {
-    //   console.log('received room.list')
-    //   console.log(rooms.state)
-    //   console.log(rooms.getters)
-    //   this.state.roomDTO = rooms
-    // }
+    'SOCKET123_test'(state, rooms) {
+      console.log('received room.list')
+      console.log(rooms)
+      // console.log(rooms.state)
+      // console.log(rooms.getters)
+      // this.state.roomDTO = rooms
+    }
   },
 })

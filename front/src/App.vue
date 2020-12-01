@@ -1,5 +1,11 @@
 <template>
   <div id="app">
+    <button
+      @click="testFromClient"
+      style="width: 100%; height: 100%; position: relative; z-index: 999"
+    >
+      test
+    </button>
     <!-- <div id="nav">
       <router-link to="/">Home</router-link> |
       <router-link to="/about">About</router-link>
@@ -23,6 +29,11 @@ export default {
     //   fn("well received");
     // });
     // console.log("why not receiving!");
+  },
+  methods: {
+    testFromClient() {
+      this.$socket.emit("from.client2", "ping!");
+    },
   },
 };
 </script>

@@ -36,6 +36,9 @@ io.on('connection', socket => {
     socket.on('from.client', data => {
         console.log(data)
     })
+    socket.on('from.client2', data => {
+        console.log('pong')
+    })
     socket.on('disconnect', reason => {
         console.log('reason: ', reason)
         if (reason === 'transport close') console.log('client side has disconnected this socket')

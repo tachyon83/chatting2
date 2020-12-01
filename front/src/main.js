@@ -12,7 +12,7 @@ Vue.use(new VueSocketIO({
   connection: 'http://localhost:3000',
   vuex: {
     store,
-    actionPrefix: 'SOCKET_',
+    actionPrefix: 'SOCKET123_',
     mutationPrefix: 'SOCKET_'
   },
   // options: { path: "/my-app/" } //Optional options
