@@ -1,7 +1,7 @@
 <template>
   <ul class="room-list" ref="roomList">
         <li v-for="(roomitem, i) in roomItems" :key="i" class="room-item">
-            <router-link @click="enterRoom" to="/room">
+            <router-link @click="enterRoom" to="/main/chat/room">
                 <span class="room-num">{{roomitem.num | formatRoomNum}}</span>
                 <span class="room-tit">{{roomitem.tit}}</span>
                 <span class="room-own">{{roomitem.own}}</span>

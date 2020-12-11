@@ -158,7 +158,7 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
 .wrapper {
   width: 100vw;
   height: 100vh;
-  background-color: #421F67; }
+  background: url(../img/bg.png) no-repeat center/cover; }
   .wrapper .app-wrap {
     display: flex;
     position: absolute;
@@ -197,26 +197,25 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
       .wrapper .nav-wrap .menu-list .menu-item {
         width: 65px;
         height: 65px; }
-        .wrapper .nav-wrap .menu-list .menu-item.menu-back {
+        .wrapper .nav-wrap .menu-list .menu-item:nth-of-type(1) a {
+          background: url(../img/menu-icon-home.png) no-repeat center; }
+        .wrapper .nav-wrap .menu-list .menu-item:nth-of-type(2) a {
+          background: url(../img/menu-icon-board.png) no-repeat center; }
+        .wrapper .nav-wrap .menu-list .menu-item:nth-of-type(3) a {
+          background: url(../img/menu-icon-chat.png) no-repeat center; }
+        .wrapper .nav-wrap .menu-list .menu-item:nth-of-type(4) a {
+          background: url(../img/menu-icon-set.png) no-repeat center; }
+        .wrapper .nav-wrap .menu-list .menu-item:nth-of-type(5) a {
           position: absolute;
-          top: 0; }
+          top: 0;
+          padding-top: 18px;
+          background: #8C3FAC url(../img/menu-icon-back.png) no-repeat center; }
         .wrapper .nav-wrap .menu-list .menu-item a {
           display: block;
           width: 100%;
           height: 100%;
           font-size: 0; }
-          .wrapper .nav-wrap .menu-list .menu-item a.home {
-            background: url(../img/menu-icon-home.png) no-repeat center; }
-          .wrapper .nav-wrap .menu-list .menu-item a.board {
-            background: url(../img/menu-icon-board.png) no-repeat center; }
-          .wrapper .nav-wrap .menu-list .menu-item a.chat {
-            background: url(../img/menu-icon-chat.png) no-repeat center; }
-          .wrapper .nav-wrap .menu-list .menu-item a.set {
-            background: url(../img/menu-icon-set.png) no-repeat center; }
-          .wrapper .nav-wrap .menu-list .menu-item a.back {
-            padding-top: 18px;
-            background: #8C3FAC url(../img/menu-icon-back.png) no-repeat center; }
-          .wrapper .nav-wrap .menu-list .menu-item a.on {
+          .wrapper .nav-wrap .menu-list .menu-item a.router-link-exact-active {
             background-color: #8C3FAC; }
   .wrapper .info-wrap {
     position: relative;
@@ -340,7 +339,7 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
             .wrapper .info-wrap .group-list .user-list .user-item .context-menu-list .context-menu-item a {
               color: #fff; }
   .wrapper .content-wrap {
-    width: calc(100% - 345px);
+    width: 100%;
     height: 100%;
     padding: 20px 25px;
     background-color: #fff;

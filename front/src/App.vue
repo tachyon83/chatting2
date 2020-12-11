@@ -1,16 +1,8 @@
 <template>
   <div id="app">
-    <button
-      @click="testFromClient"
-      style="width: 100%; height: 100%; position: relative; z-index: 999"
-    >
-      test
-    </button>
-    <!-- <div id="nav">
-      <router-link to="/">Home</router-link> |
-      <router-link to="/about">About</router-link>
-    </div> -->
-    <router-view />
+    <div class="wrapper">
+      <router-view />
+    </div>
   </div>
 </template>
 <script>
@@ -41,4 +33,6 @@ export default {
 
 <style>
 @import "./css/main.css";
+
+
 </style>

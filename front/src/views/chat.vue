@@ -1,17 +1,27 @@
 <template>
-  <div class="chat">
-    <chatLobby/>
+  <div class="view-wrap">
+    <modalWrap />
+    <infoWrap />
+    <router-view/>
   </div>
 </template>
 
 <script>
-// @ is an alias to /src
-import chatLobby from '@/components/chatLobby.vue'
+import infoWrap from "@/components/infoWrap.vue";
+import modalWrap from "@/components/modalWrap.vue";
 
 export default {
   name: 'chat',
   components: {
-    chatLobby
+    infoWrap,
+    modalWrap,
+  },
+  data() {
+    
   }
 }
 </script>
+
+<style scoped>
+  .view-wrap {display: flex; width: 100%;}
+</style>
