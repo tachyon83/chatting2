@@ -1,8 +1,6 @@
 <template>
   <div>
-    <div class="app-wrap">
-      <navWrap />
-    </div>
+    <navWrap />
   </div>
 </template>
 

@@ -168,8 +168,15 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
     height: 700px;
     border-radius: 30px;
     overflow: hidden;
-    transform: translate(-50%, -50%);
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5); }
+    transform: translate(-50%, -50%) scale(0);
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    animation: appAni 2s ease forwards; }
+
+@keyframes appAni {
+  0% {
+    transform: translate(-50%, -50%) scale(0); }
+  100% {
+    transform: translate(-50%, -50%) scale(1); } }
   .wrapper .modal-wrap {
     display: flex;
     position: absolute;
@@ -214,7 +221,8 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
           display: block;
           width: 100%;
           height: 100%;
-          font-size: 0; }
+          font-size: 0;
+          transition: all .5s ease; }
           .wrapper .nav-wrap .menu-list .menu-item a.router-link-exact-active {
             background-color: #8C3FAC; }
   .wrapper .info-wrap {

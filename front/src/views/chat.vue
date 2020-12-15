@@ -17,7 +17,9 @@ export default {
     modalWrap,
   },
   data() {
-    
+    return {
+
+    }
   }
 }
 </script>
