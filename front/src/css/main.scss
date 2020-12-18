@@ -236,8 +236,14 @@ input[type=number] {
         height: 700px;
         border-radius:30px;
         overflow: hidden;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%) scale(0);
         box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        animation: appAni 2s ease forwards;
+    }
+
+    @keyframes appAni {
+        0% {transform: translate(-50%, -50%) scale(0);}
+        100% {transform: translate(-50%, -50%) scale(1)}
     }
     
     .modal-wrap {
@@ -300,12 +306,12 @@ input[type=number] {
                     width: 100%;
                     height: 100%;
                     font-size: 0;
+                    transition: all .5s ease;
                     
                     &.router-link-exact-active {
                         background-color: $purple-soft;
                     }
                 }
-                
             }
         }
     }
