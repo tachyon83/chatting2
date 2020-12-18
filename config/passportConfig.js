@@ -58,16 +58,25 @@ module.exports = () => {
         console.log('in passport config')
 
         if (!users[id]) return done(null, false);
-        bcrypt.compare(pw, users[id].pw, (err, res) => {
-            console.log('inside passportConfig', users)
-            if (res) {
-                console.log('inside passporconfig.bcrypt.cmpare.authenticated')
-                console.log('before going into serialize, does session has passport?', req.session.hasOwnProperty('passport'))
-                console.log('direct access to passport', req.session.passport)
-                return done(null, users[id])
-            }
-            return done(null, false)
-        })
+        if (pw === users[id].pw) {
+            console.log('inside passporconfig.bcrypt.cmpare.authenticated')
+            console.log('before going into serialize, does session has passport?', req.session.hasOwnProperty('passport'))
+            console.log('direct access to passport', req.session.passport)
+            return done(null, users[id])
+        }
+        return done(null, false)
+        // bcrypt.compare(pw, users[id].pw, (err, res) => {
+        //     console.log('pw', pw)
+        //     console.log('users[id].pw', users[id].pw)
+        //     console.log('inside passportConfig', users)
+        //     if (res) {
+        //         console.log('inside passporconfig.bcrypt.cmpare.authenticated')
+        //         console.log('before going into serialize, does session has passport?', req.session.hasOwnProperty('passport'))
+        //         console.log('direct access to passport', req.session.passport)
+        //         return done(null, users[id])
+        //     }
+        //     return done(null, false)
+        // })
 
 
 

@@ -4,9 +4,9 @@ import VueSocketIO from 'vue-socket.io'
 import App from './App.vue'
 import router from './router'
 import store from './store'
-import axios from 'axios'
 import envSettings from './envSettings'
-Vue.prototype.$http = axios
+// import axios from 'axios'
+// Vue.prototype.$http = axios
 Vue.config.productionTip = false
 
 Vue.use(new VueSocketIO({
@@ -21,11 +21,11 @@ Vue.use(new VueSocketIO({
 }))
 
 new Vue({
-  methods: {
-    testFromClient() {
-      this.$socket.emit('from.client2', 'ping!')
-    }
-  },
+  // methods: {
+  //   testFromClient() {
+  //     this.$socket.emit('from.client2', 'ping!')
+  //   }
+  // },
   router,
   store,
   render: h => h(App)

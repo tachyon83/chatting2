@@ -1,12 +1,15 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import axios from 'axios'
 // import socket from '../plugins/socketio'
 // import socket from './modules/socket'
-
+Vue.prototype.$http = axios
 Vue.use(Vuex)
+const envSettings = require('../envSettings')
 
 export default new Vuex.Store({
   state: {
+    test: 'test',
     showModal: false,
     isRoom: false,
     userDTO: {
@@ -101,6 +104,34 @@ export default new Vuex.Store({
     // }
   },
   actions: {
+    // toMain() {
+    //   this.$router.push({
+    //     name: "main",
+    //   });
+    // },
+    // logIn(username, password) {
+    //   // console.log(this.userID);
+    //   this.$http
+    //     // axios
+    //     .post(
+    //       `${envSettings.back}user/signin`,
+    //       {
+    //         username, password
+    //         // password: this.userPW,
+    //       },
+    //       {
+    //         withCredentials: true,
+    //       }
+    //     )
+    //     .then((res) => {
+    //       console.log(res);
+    //       if (res.data.response) this.toMain;
+    //       else console.log("failed");
+    //     })
+    //     .catch((err) => {
+    //       console.log(err);
+    //     });
+    // },
     // 'SOCKET123_test'(state, rooms) {
     SOCKET123_test(state, rooms) {
       console.log('received room.list')
