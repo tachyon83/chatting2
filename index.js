@@ -44,12 +44,13 @@ const watch = WatchJS.watch;
 
 // important: this [cors] must come before Router
 const cors = require('cors');
+const cookieParser = require('cookie-parser')
 const router = express.Router();
 // const router = require('./routes/router')
 const app = express();
 app.set('port', process.env.PORT || 3000);
-app.set('view engine', 'ejs');
-app.set('views', __dirname + '/html');
+// app.set('view engine', 'ejs');
+// app.set('views', __dirname + '/html');
 
 const sessionIntoRedis = (session({
     httpOnly: true, //cannot access via javascript/console
@@ -67,6 +68,14 @@ const sessionIntoRedis = (session({
         // saveUninitialized: false,
         // resave: false
     }),
+    cookie: (process.env.NODE_ENV === 'production') ? {
+        httpOnly: true,
+        // path: corsSettings.origin,
+        // sameSite: 'lax',
+        sameSite: 'none',
+        secure: true,
+        maxAge: 1000 * 60 * 10,
+    } : null,
 }))
 
 // app.use(session({
@@ -78,6 +87,8 @@ const sessionIntoRedis = (session({
 const bcrypt = require('bcrypt');
 const saltRounds = 10
 
+app.use(express.json())
+app.use(cookieParser())
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(sessionIntoRedis)
@@ -86,9 +97,14 @@ app.use(flash())
 passportConfig();
 
 app.use('/html', express.static(__dirname + '/html'));
-app.use(cors());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json())
+app.use(cors())
+// app.use(cors({
+//     origin: true,
+//     credentials: true,
+//     preflightContinue: true,
+// }));
+// app.use(bodyParser.urlencoded({ extended: false }));
+// app.use(bodyParser.json())
 app.use('/', router);
 
 /*
@@ -678,9 +694,9 @@ io.use((socket, next) => {
 var timestamp = null;
 
 io.on('connection', socket => {
-    socket.name = socket.request.session.passport.user
-    console.log('now name attached', socket.name)
-    onlineUsers[socket.name].socketId = socket.id
+    // socket.name = socket.request.session.passport.user
+    // console.log('now name attached', socket.name)
+    // onlineUsers[socket.name].socketId = socket.id
 
     socket.emit('test')
 
@@ -803,14 +819,14 @@ io.on('connection', socket => {
         console.log(socket.id)
         console.log(io.sockets.adapter.rooms[0].length)
 
-        roomLeaveProcess(socket.name).then(_ => {
-            // if (reason == 'client namespace disconnect') {
-            if (reason == 'transport close') {
-                console.log('client disconnect!')
-                signOutProcess(socket.name)
-                socket.request.session.destroy()
-            }
-        })
+        // roomLeaveProcess(socket.name).then(_ => {
+        //     // if (reason == 'client namespace disconnect') {
+        //     if (reason == 'transport close') {
+        //         console.log('client disconnect!')
+        //         signOutProcess(socket.name)
+        //         socket.request.session.destroy()
+        //     }
+        // })
     })
 
     // socket.on('disconnect', reason => {

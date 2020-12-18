@@ -55,10 +55,11 @@ module.exports = () => {
         // passReqToCallback:false,
         passReqToCallback: true,
     }, (req, id, pw, done) => {
+        console.log('in passport config')
 
         if (!users[id]) return done(null, false);
         bcrypt.compare(pw, users[id].pw, (err, res) => {
-            // console.log('inside passportConfig', users)
+            console.log('inside passportConfig', users)
             if (res) {
                 console.log('inside passporconfig.bcrypt.cmpare.authenticated')
                 console.log('before going into serialize, does session has passport?', req.session.hasOwnProperty('passport'))
