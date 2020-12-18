@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-// import login from '../views/login.vue'
-import login from '../components/login.vue'
+import login from '../views/login.vue'
+// import login from '../components/login.vue'
 import main from '../views/main.vue'
 import home from "..//views/home.vue";
 import board from '../views/board.vue'
