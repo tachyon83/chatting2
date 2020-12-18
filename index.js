@@ -97,12 +97,12 @@ app.use(flash())
 passportConfig();
 
 app.use('/html', express.static(__dirname + '/html'));
-app.use(cors())
-// app.use(cors({
-//     origin: true,
-//     credentials: true,
-//     preflightContinue: true,
-// }));
+// app.use(cors())
+app.use(cors({
+    origin: true,
+    credentials: true,
+    preflightContinue: true,
+}));
 // app.use(bodyParser.urlencoded({ extended: false }));
 // app.use(bodyParser.json())
 app.use('/', router);
@@ -466,41 +466,61 @@ router.get('/', (req, res) => {
     res.render('index', { user: null })
 })
 
-router.post('/user/signin', passport.authenticate('local', {
-    failureRedirect: '/',
-    failureFlash: true
-}), (req, res, next) => {
-    console.log('right after serialization, passport?', req.session.hasOwnProperty('passport'))
-    // 여기서 다른 세션에서 왔으니 기존 소켓 끊어주기 필요
-    next()
-}, (req, res) => {
-
-    console.log('came from serialization maybe?')
-    console.log('session ID', req.session.id)
-    console.log('passport after router.post(profile.signin),passport.authenticate', req.session.passport)
-    console.log(res.locals.basicInfo)
-
-    let user = req.session.passport.user
-
-    res.locals.basicInfo = {
-        basicInfo: JSON.stringify({
-            userId: user,
-            rooms: rooms,
-            alreadySignedIn: (onlineUsers[user]) ? true : false,
-        })
-    }
-    if (onlineUsers[user]) {
-        // res.render('index', res.locals.basicInfo)
-        res.redirect('/')
-        return;
-    }
-    req.session.save(() => {
-        signInProcess(user)
-        console.log('onlineUsers', onlineUsers)
-        console.log('passport in session.save', req.session.passport)
-        res.render('chatLobby', res.locals.basicInfo)
-    })
+router.post('/user/signin', (req, res, next) => {
+    passport.authenticate('local', (err, member, info) => {
+        if (err) return next(err);
+        if (member) {
+            // when using custom callback, need to use req.logIn()
+            req.logIn(member, (err) => {
+                if (err) return next(err)
+                // res.cookie('username', member.id, { maxAge: 5 * 60 * 1000 })
+                // res.header('Access-Control-Allow-Credentials', 'true');
+                console.log('login successful')
+                return res.json({ response: member.id })
+            })
+        } else {
+            console.log(req.flash('error'))
+            console.log('login failed')
+            res.json({ response: false })
+        }
+    })(req, res, next)
 })
+
+// router.post('/user/signin', passport.authenticate('local', {
+//     failureRedirect: '/',
+//     failureFlash: true
+// }), (req, res, next) => {
+//     console.log('right after serialization, passport?', req.session.hasOwnProperty('passport'))
+//     // 여기서 다른 세션에서 왔으니 기존 소켓 끊어주기 필요
+//     next()
+// }, (req, res) => {
+
+//     console.log('came from serialization maybe?')
+//     console.log('session ID', req.session.id)
+//     console.log('passport after router.post(profile.signin),passport.authenticate', req.session.passport)
+//     console.log(res.locals.basicInfo)
+
+//     let user = req.session.passport.user
+
+//     res.locals.basicInfo = {
+//         basicInfo: JSON.stringify({
+//             userId: user,
+//             rooms: rooms,
+//             alreadySignedIn: (onlineUsers[user]) ? true : false,
+//         })
+//     }
+//     // if (onlineUsers[user]) {
+//     //     // res.render('index', res.locals.basicInfo)
+//     //     // res.redirect('/')
+//     //     return;
+//     // }
+//     req.session.save(() => {
+//         signInProcess(user)
+//         console.log('onlineUsers', onlineUsers)
+//         console.log('passport in session.save', req.session.passport)
+//         // res.render('chatLobby', res.locals.basicInfo)
+//     })
+// })
 
 router.post('/user/signup', (req, res) => {
     let username = req.body.username

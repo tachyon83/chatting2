@@ -37,6 +37,7 @@
 <script>
 import axios from "axios";
 axios.defaults.withCredentials = true;
+import envSettings from "../envSettings";
 export default {
   // data: function () {
   //   return {
@@ -56,7 +57,7 @@ export default {
       // this.$http
       axios
         .post(
-          "https://localhost:3000/user/signin",
+          `${envSettings.back}user/signin`,
           {
             username: document.getElementById("userID").value,
             password: document.getElementById("userPW").value,
@@ -67,7 +68,7 @@ export default {
           }
         )
         .then((res) => {
-          if (res) this.toMain();
+          if (res.response) this.toMain();
           else console.log("failed");
         })
         .catch((err) => {

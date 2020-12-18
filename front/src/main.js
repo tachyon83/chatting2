@@ -5,12 +5,13 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import axios from 'axios'
+import envSettings from './envSettings'
 Vue.prototype.$http = axios
 Vue.config.productionTip = false
 
 Vue.use(new VueSocketIO({
   debug: true,
-  connection: 'http://localhost:3000',
+  connection: envSettings.back,
   vuex: {
     store,
     actionPrefix: 'SOCKET123_',
