@@ -5,8 +5,9 @@ import App from './App.vue'
 import router from './router'
 import store from './store'
 import envSettings from './envSettings'
-// import axios from 'axios'
-// Vue.prototype.$http = axios
+import axios from 'axios'
+Vue.prototype.$http = axios
+Vue.prototype.$envSettings = envSettings
 Vue.config.productionTip = false
 
 Vue.use(new VueSocketIO({
@@ -18,6 +19,9 @@ Vue.use(new VueSocketIO({
     mutationPrefix: 'SOCKET_'
   },
   // options: { path: "/my-app/" } //Optional options
+  options: {
+    withCredentials: true,
+  }
 }))
 
 new Vue({

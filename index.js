@@ -7,8 +7,12 @@ var roomsCnt = {
     cnt: Object.keys(rooms).length + 1
 }
 var users = require('./models/users').users
+
 const addNewUser = require('./models/users').addNewUser
 
+
+////////////////// data map //////////////////
+var socketIds = {}
 // 0번방은 없다
 var roomUsers = {
     1: {},
@@ -18,12 +22,11 @@ var onlineUsers = {}
 var onlineUsersCnt = {
     cnt: Object.keys(onlineUsers).length + 1
 }
+//////////////////////////////////////////////
 
 // const url = require('url');
 // const path = require('path'); // OS-independent
 const http = require('http');
-const bodyParser = require('body-parser')
-// const static = require('serve-static');
 const express = require('express');
 const session = require('express-session');
 
@@ -96,7 +99,7 @@ app.use(sessionIntoRedis)
 app.use(flash())
 passportConfig();
 
-app.use('/html', express.static(__dirname + '/html'));
+// app.use('/html', express.static(__dirname + '/html'));
 // app.use(cors())
 app.use(cors({
     origin: true,
@@ -105,6 +108,7 @@ app.use(cors({
 }));
 // app.use(bodyParser.urlencoded({ extended: false }));
 // app.use(bodyParser.json())
+
 app.use('/', router);
 
 /*
@@ -259,225 +263,54 @@ const signOutProcess = user => {
 
 }
 
-const checkIfAlreadySignedIn = (req, res, next) => {
-
-    /*
-        checkIfAlreadySignedIn 에서 아래 사항 처리
-            현재 로그인되어있는지 확인
-            
-            ! 로그인되어있다면 이전 소켓을 끊어버리고,
-            있던 곳으로 그대로 이동시키기.
-
-            로그인되어있을 시 (아이디와 방 위치 보여주기) 재접여부 확인 ('index'에서)
-            재접안하면 어디로 갈것인지? (일단은 대기실로 처리)
-            재접하면 해당 방으로 이동(방이 없으면 대기실로)
-            근데 여기서 또...원래 대기실이었으면 물어볼거 없이 그냥
-            바로 대기실로 가게 할지..? (일단은 그렇게 처리함)
-        
-            로그인된 세션이 있고 대기실에 있었다면 바로 lobby로 빼준다.
-            그렇지 않으면 'index'로 이동
-            프론트에서 [이전 위치]를 보여주거나 로그인/회원가입 화면 보여주기
-
-    going to be used in both '/' and '/user/signin'
-    the result would be two ways: lobby or exist
-    next() will be for the user not signed in before !
-
-    in '/user/signin', this middleware comes after passport
-    two cases: 
-    - case 1. from a different session(browser)
-    - case 2. from the same session, via a different tab
-
-    case 1: 
-        '/'에서는 기존 로그인된 다른 세션있어도 로그인을 새로 해야하는 상황
-        '/user/signin'에서도 마찬가지
-
-    case 2:
-        '/'에서는 바로 대기실로 가거나 원래 있던 채팅방으로 복귀할 지 묻는 창
-        (기존 세션 또는 소켓은 종료)
-        원래 대기실이었으면 그냥 바로 대기실로
-        case 2에서는 원래 로그인된 상태였다면
-        '/user/signin/'으로 들어가는 일이 없다. [post]만 받는다
-
-    같은 세션에서 왔다면, 기존 로그인이 있을 때 /user/signin으로 가는 경우는 없으므로
-    '/user/signin'으로 들어온 경우에는 다른 세션에서 들어왔다는 것이고,
-    로그인 인증을 거쳐야(passport.authenticate를 먼저 거쳐야) 기존 로그인이
-    있는지 없는지 확인이 된다.
-    */
-
-    console.log('now in the checkif middleware')
-
-    // need to define this basicInfo here otherwise there will be an error in ejs
-    res.locals.basicInfo = {
-        basicInfo: JSON.stringify({
-            userId: null,
-            rooms: null,
-            roomNumber: null,
-        })
-    }
-    let user = (req.session.passport) ? req.session.passport.user : null
-    // let roomNumber = 0
-
-    /*
-        같은 세션에서 '/'로 들어왔을 때, 기존 로그인이 있는지 확인위해
-        세션체크가 필요하다.
-
-        하지만 다른 세션에서 'user/signin'으로 들어왔을 때는
-        passport를 거쳐서 일단 로그인을 해야한다. 하지만 이때는
-        passport를 통해 인증이 되었기에, session체크가
-        불필요하다. 그럼에도 불구하고 동일 미들웨어 사용을 위해 남겨두었다.
-
-        그래서 현재의 user가 이전에 있던 유저인지 아니면 새로 로그인한 유저인지
-        확인하고 위해 if (onlineUsers.hasOwnProperty(user)) 과정을
-        거쳐야 한다.
-        새로 들어온 유저라면 next()
-
-        유사하게, '/'를 통해 들어온 기존 유저는
-        if (onlineUsers.hasOwnProperty(user)) 과정이 불필요하다.
-        하지만 동일 미들웨어 사용을 위해 남겨두었다...
-
-    */
-    // if (req.isAuthenticated()) {
-    // if (req.session.passport) {
-
-    console.log('user inside checkif', user)
-    console.log('passport inside checkif', req.session.passport)
-    console.log('onlineUsers inside checkif', onlineUsers[user])
-    if (req.session.passport && onlineUsers[user]) {
-
-        console.log('this session has passport', req.session.hasOwnProperty('passport'))
-        console.log('this req has already been authenticated')
-        user = req.session.passport.user
-        roomNumber = onlineUsers[user].status
-        console.log('user: ', user)
-        // io.sockets[onlineUsers[user].socketId].disconnect()
-
-        io.to(onlineUsers[user].socketId).emit('manualDisconnectByServer')
-        // 해당 소켓 끊고 프론트로 정보 보내기
-        // 현 세션에 다시 붙여주고 (같은 브라우저 내의 새 탭이었다면, 그냥 떼었다 붙이기...?)
-
-        console.log('manual disconnect order emitted')
-
-        io.on('manualDisconnectionComplete', () => {
-            console.log('received manual ---complete')
-            signInProcess(user)
-            req.session.currRoom = roomNumber
-
-            res.locals.basicInfo = {
-                basicInfo: JSON.stringify({
-                    userId: user,
-                    rooms: rooms,
-                    roomNumber: roomNumber,
-                })
-            }
-            res.render('chatLobby', res.locals.basicInfo)
-        })
-        return
-
-        // signInProcess(user)
-        // req.session.currRoom = roomNumber
-
-        // res.locals.basicInfo = {
-        //     basicInfo: JSON.stringify({
-        //         userId: user,
-        //         rooms: rooms,
-        //         roomNumber: roomNumber,
-        //     })
-        // }
-        // res.render('chatLobby', res.locals.basicInfo)
-        // return
-
-        //     if (onlineUsers.hasOwnProperty(user)) {
-        //         res.locals.basicInfo={
-        //             basicInfo:JSON.stringify({
-        //                 userId:user,
-        //                 rooms:rooms,
-        //                 roomNumber:roomNumber,
-        //             })
-        //         }
-        //         if (onlineUsers[user].status != 0) {
-        //             res.locals.basicInfo = {
-        //                 basicInfo: JSON.stringify({
-        //                     userId: user,
-        //                     roomNumber: onlineUsers[user].status,
-        //                 })
-        //             }
-        //             res.render('index', res.locals.basicInfo)
-        //         } else {
-        //             res.locals.basicInfo = {
-        //                 basicInfo: JSON.stringify({
-        //                     userId: user,
-        //                     rooms: rooms,
-        //                 })
-        //             }
-        //             res.render('chatLobby', res.locals.basicInfo)
-        //         }
-        //         return
-        //         // 위에서 index나 lobby로 이동을 시켜주어야 한다. next()가
-        //         // 다를 수 있기 때문.
-        //     } else {
-        //         res.locals.basicInfo = {
-        //             basicInfo: JSON.stringify({
-        //                 userId: user,
-        //                 rooms: rooms,
-        //             })
-        //         }
-        //     }
-    } else {
-        res.locals.basicInfo = {
-            basicInfo: JSON.stringify({
-                userId: user,
-                rooms: rooms,
-                roomNumber: 0,
-            })
-        }
-    }
-    next();
-}
-
-// router.get('/', checkIfAlreadySignedIn, (req, res) => {
-//     res.render('index', res.locals.basicInfo)
-// })
-
-router.get('/', (req, res) => {
-
-    // 다른 세션에서 접근해서 로그인했을 때,(로그인을 성공했으니)
-    // 기존 로그인이 있었다면, 로비페이지로 가는게 맞다.<-아니다! 수정필요
-    // 로그인 성공 후 기존 로그인이 있었다면 여기로 다시 온다
-    // 그러므로 여기서도 동일 세션일 시 로비페이지로 이동한다.
-
-    // res.locals.basicInfo = {
-    //     basicInfo: {
-    //         userId: null,
-    //         rooms: rooms,
-    //         alreadySignedIn:false,
-    //     }
-    // }
-
-    if (req.session.passport && onlineUsers[req.session.passport.user]) {
-
-        // let basicInfo = JSON.stringify({
-        //     userId: req.session.passport.user,
-        //     roomNumber: 'roomNumber Not Necessary?',
-        // })
-        // res.locals.basicInfo
-        res.render('index', { user: req.session.passport.user })
-        return;
-    }
-    res.render('index', { user: null })
-})
-
 router.post('/user/signin', (req, res, next) => {
     passport.authenticate('local', (err, member, info) => {
         if (err) return next(err);
         if (member) {
             // when using custom callback, need to use req.logIn()
+            // req.session.save(() => {
+            //     req.logIn(member, (err) => {
+            //         if (err) return next(err)
+            //         // res.cookie('username', member.id, { maxAge: 5 * 60 * 1000 })
+            //         // res.header('Access-Control-Allow-Credentials', 'true');
+            //         console.log('login successful')
+            //         onlineUsers[member.id] = member
+
+            //         // onlineUsers[member.id].socketId = socketIds[req.session.id]
+
+            //         // var io = socketio.listen(server, {
+            //         //     cors: {
+            //         //         origin: true,
+            //         //         credentials: true,
+            //         //     }
+            //         // });
+            //         console.log(req.session)
+            //         require('./io')(io)
+            //         return res.json({
+            //             response: member.id,
+            //             socketId: onlineUsers[member.id].socketId,
+            //         })
+            //     })
+
+            // })
             req.logIn(member, (err) => {
                 if (err) return next(err)
                 // res.cookie('username', member.id, { maxAge: 5 * 60 * 1000 })
                 // res.header('Access-Control-Allow-Credentials', 'true');
                 console.log('login successful')
-                return res.json({ response: member.id })
+                onlineUsers[member.id] = member
+                onlineUsers[member.id].socketId = socketIds[req.session.id]
+                console.log(socketIds)
+                console.log(socketIds[req.session.id])
+                socketIds[req.session.id].name = member.id
+
+                res.json({
+                    response: member.id,
+                    socketId: onlineUsers[member.id].socketId,
+                })
+                io.sockets.connected[onlineUsers[member.id].socketId].emit('test', rooms)
             })
+
         } else {
             console.log(req.flash('error'))
             console.log('login failed')
@@ -486,47 +319,12 @@ router.post('/user/signin', (req, res, next) => {
     })(req, res, next)
 })
 
-// router.post('/user/signin', passport.authenticate('local', {
-//     failureRedirect: '/',
-//     failureFlash: true
-// }), (req, res, next) => {
-//     console.log('right after serialization, passport?', req.session.hasOwnProperty('passport'))
-//     // 여기서 다른 세션에서 왔으니 기존 소켓 끊어주기 필요
-//     next()
-// }, (req, res) => {
-
-//     console.log('came from serialization maybe?')
-//     console.log('session ID', req.session.id)
-//     console.log('passport after router.post(profile.signin),passport.authenticate', req.session.passport)
-//     console.log(res.locals.basicInfo)
-
-//     let user = req.session.passport.user
-
-//     res.locals.basicInfo = {
-//         basicInfo: JSON.stringify({
-//             userId: user,
-//             rooms: rooms,
-//             alreadySignedIn: (onlineUsers[user]) ? true : false,
-//         })
-//     }
-//     // if (onlineUsers[user]) {
-//     //     // res.render('index', res.locals.basicInfo)
-//     //     // res.redirect('/')
-//     //     return;
-//     // }
-//     req.session.save(() => {
-//         signInProcess(user)
-//         console.log('onlineUsers', onlineUsers)
-//         console.log('passport in session.save', req.session.passport)
-//         // res.render('chatLobby', res.locals.basicInfo)
-//     })
-// })
-
 router.post('/user/signup', (req, res) => {
-    let username = req.body.username
-    let password = req.body.password
+    let { username, password } = req.body
 
-    if (users.hasOwnProperty(username)) res.redirect('/')
+    if (users.hasOwnProperty(username)) return res.json({
+        response: false,
+    })
 
     bcrypt
         .genSalt(saltRounds)
@@ -538,7 +336,8 @@ router.post('/user/signup', (req, res) => {
             // console.log('inside index users', users)
             // res.redirect('/')
             console.log(users[username])
-            res.render('index', { user: null })
+            // res.render('index', { user: null })
+            res.json({ response: true })
         })
         .catch(err => console.error(err.message))
 })
@@ -561,9 +360,10 @@ router.get('/user/resignin/:user', (req, res) => {
     socket.disconnect()
     if (socketSession) {
         socketSession.destroy(_ => {
-            res.render('chatLobby', res.locals.basicInfo)
+            // res.render('chatLobby', res.locals.basicInfo)
         })
-    } else res.render('chatLobby', res.locals.basicInfo)
+    }
+    // else res.render('chatLobby', res.locals.basicInfo)
 
     // roomLeaveProcess(user).then(_ => {
     //     socket.disconnect();
@@ -589,9 +389,9 @@ router.get('/user/signout/:user', (req, res) => {
     req.session.destroy(_ => {
         signOutProcess(user);
         if (session.id != socketSession.id) socketSession.destroy(_ => {
-            res.render('index', { user: null })
+            // res.render('index', { user: null })
         })
-        else res.render('index', { user: null })
+        // else res.render('index', { user: null })
     })
 
     // roomLeaveProcess(user).then(_ => {
@@ -607,10 +407,6 @@ router.get('/user/signout/:user', (req, res) => {
     //         else res.render('index', { user: null })
     //     })
     // })
-})
-
-router.get('/user/signuppage', (req, res) => {
-    res.render('signup')
 })
 
 // router.get('/onlineUsers/list', (req, res) => {
@@ -681,7 +477,12 @@ server.listen(app.get('port'), () => {
 const socketio = require('socket.io');
 // const { resolve } = require('path')
 // const { json } = require('express')
-const io = socketio.listen(server);
+const io = socketio.listen(server, {
+    cors: {
+        origin: true,
+        credentials: true,
+    }
+});
 
 watch(roomsCnt, () => {
     console.log('watched: a new room made')
@@ -699,40 +500,56 @@ watch(rooms, () => {
 // })
 
 io.use((socket, next) => {
-    console.log('io middle')
+    console.log('io middle', socket.id)
+    // this is just damn important!
     sessionIntoRedis(socket.request, socket.request.res || {}, next);
 })
-io.use((socket, next) => {
-    redisClient.get('sess:' + socket.request.session.id, (err, value) => {
-        if (err) throw err;
-        console.log('redisClient.get', value)
-        console.log('socket.req.session.id', socket.request.session.id)
-    })
-    next();
-})
+// io.use((socket, next) => {
+//     console.log(socket.id)
+//     // redisClient.get('sess:' + socket.request.session.id, (err, value) => {
+//     //     if (err) throw err;
+//     //     console.log('redisClient.get', value)
+//     //     console.log(this)
+//     //     this.sessionId = value
+//     //     // console.log('socket.req.session.id', socket.request.session.id)
+//     // })
+//     next();
+// })
 
 var timestamp = null;
 
 io.on('connection', socket => {
+    // console.log(this)
+    // console.log(socket.request.headers.cookie)
+    // console.log(socket.request)
+    console.log(socket.request.session)
+    console.log(socket.request.session.id)
+    // onlineUsers[socket.request.session.passport.id].socketId = socket.id
+    // socketIds[socket.request.headers.cookie] = socket.id
+    socketIds[socket.request.session.id] = socket.id
     // socket.name = socket.request.session.passport.user
     // console.log('now name attached', socket.name)
     // onlineUsers[socket.name].socketId = socket.id
 
-    socket.emit('test', rooms)
+    // socket.emit('test', rooms)
 
     socket.use((packet, next) => {
         let currTime = new Date();
-        timestamp = currTime.getHours() + ':' + currTime.getMinutes();
+        this.timestamp = currTime.getHours() + ':' + currTime.getMinutes();
         // if (socket.request.session.passport) return next();
         // socket.disconnect();
         // console.log('this session is expired')
-        next()
+        if (socket.name) {
+
+            next()
+        }
     })
     // console.log('userMap', userMap)
     // console.log('socket.req.session', socket.request.session)
+    // socket.emit('test', rooms)
 
     // socket.name might be able to replace socketMap
-    console.log('socket.name', socket.name)
+    // console.log('socket.name', socket.name)
     // userMap[socket.request.session.passport.user] = socket.id
     // socketMap[socket.id] = socket.request.session.passport.user
     // socket.join(socket.request.session.currRoom, () => {
@@ -835,7 +652,7 @@ io.on('connection', socket => {
 
     socket.on('disconnecting', reason => {
         console.log(reason);
-        console.log(socket.request.session.passport)
+        // console.log(socket.request.session.passport)
         console.log(socket.id)
         console.log(io.sockets.adapter.rooms[0].length)
 

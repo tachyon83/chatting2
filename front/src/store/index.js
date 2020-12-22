@@ -5,7 +5,6 @@ import axios from 'axios'
 // import socket from './modules/socket'
 Vue.prototype.$http = axios
 Vue.use(Vuex)
-const envSettings = require('../envSettings')
 
 export default new Vuex.Store({
   state: {
@@ -97,48 +96,13 @@ export default new Vuex.Store({
     // SOCKET_test(state, rooms) {
     //   console.log('received')
     //   console.log(rooms)
-    //   let data = 123
-    //   // state.roomDTO = rooms
-    //   // console.log('state.roomDTO', state.roomDTO)
-    //   // console.log('state.userDTO', state.userDTO)
     // }
   },
   actions: {
-    // toMain() {
-    //   this.$router.push({
-    //     name: "main",
-    //   });
-    // },
-    // logIn(username, password) {
-    //   // console.log(this.userID);
-    //   this.$http
-    //     // axios
-    //     .post(
-    //       `${envSettings.back}user/signin`,
-    //       {
-    //         username, password
-    //         // password: this.userPW,
-    //       },
-    //       {
-    //         withCredentials: true,
-    //       }
-    //     )
-    //     .then((res) => {
-    //       console.log(res);
-    //       if (res.data.response) this.toMain;
-    //       else console.log("failed");
-    //     })
-    //     .catch((err) => {
-    //       console.log(err);
-    //     });
-    // },
     // 'SOCKET123_test'(state, rooms) {
     SOCKET123_test(state, rooms) {
       console.log('received room.list')
       console.log(rooms)
-      // console.log(rooms.state)
-      // console.log(rooms.getters)
-      // this.state.roomDTO = rooms
     }
   },
 })

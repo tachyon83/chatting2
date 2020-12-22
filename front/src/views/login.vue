@@ -35,16 +35,7 @@
 </template>
  
 <script>
-// import axios from "axios";
-// axios.defaults.withCredentials = true;
-import envSettings from "../envSettings";
 export default {
-  // data: function () {
-  //   return {
-  //     username: document.getElementById("userID").value,
-  //     password: document.getElementById("userPW").value,
-  //   };
-  // },
   name: "login",
   methods: {
     toMain() {
@@ -53,15 +44,12 @@ export default {
       });
     },
     logIn(e) {
-      // console.log(this.userID);
       this.$http
-        // axios
         .post(
-          `${envSettings.back}user/signin`,
+          `${this.$envSettings.back}user/signin`,
           {
             username: this.userID,
             password: this.userPW,
-            // password: this.userPW,
           },
           {
             withCredentials: true,
