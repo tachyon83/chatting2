@@ -14,7 +14,8 @@ const LocalStrategy = require('passport-local').Strategy;
 // const users] is not needed because it will have been imported where this passportConfig is imported
 // no, that is not true
 // maybe then, users is newly imported everytime this file is executed
-const users = require('../models/users').users
+// const users = require('../models/users').users
+const userDao = require('../models/userDao')
 
 module.exports = () => {
 
@@ -57,7 +58,24 @@ module.exports = () => {
     }, (req, id, pw, done) => {
         console.log('in passport config')
 
-        if (!users[id]) return done(null, false);
+        userDao.findById(id, (err, response) => {
+            if (err) return done(err, false)
+            if (response) {
+                console.log(pw)
+                console.log(response.response)
+                console.log(response.response.password)
+                bcrypt.compare(pw, response.response.password, (err, res) => {
+                    if (err) return done(err, false)
+                    console.log(res)
+                    if (res) return done(null, response.response)
+                    return done(null, false)
+                })
+            } else {
+                return done(null, false)
+            }
+        })
+
+        // if (!users[id]) return done(null, false);
         // if (pw === users[id].pw) {
         //     console.log('inside passporconfig.bcrypt.cmpare.authenticated')
         //     console.log('before going into serialize, does session has passport?', req.session.hasOwnProperty('passport'))
@@ -65,20 +83,18 @@ module.exports = () => {
         //     return done(null, users[id])
         // }
         // return done(null, false)
-        bcrypt.compare(pw, users[id].pw, (err, res) => {
-            console.log('pw', pw)
-            console.log('users[id].pw', users[id].pw)
-            if (err) return done(err, false)
-            if (res) {
-                console.log('inside passporconfig.bcrypt.cmpare.authenticated')
-                console.log('before going into serialize, does session has passport?', req.session.hasOwnProperty('passport'))
-                console.log('direct access to passport', req.session.passport)
-                return done(null, users[id])
-            }
-            return done(null, false)
-        })
-
-
+        // bcrypt.compare(pw, users[id].pw, (err, res) => {
+        //     console.log('pw', pw)
+        //     console.log('users[id].pw', users[id].pw)
+        //     if (err) return done(err, false)
+        //     if (res) {
+        //         console.log('inside passporconfig.bcrypt.cmpare.authenticated')
+        //         console.log('before going into serialize, does session has passport?', req.session.hasOwnProperty('passport'))
+        //         console.log('direct access to passport', req.session.passport)
+        //         return done(null, users[id])
+        //     }
+        //     return done(null, false)
+        // })
 
         // if (!users[id]) return done(null, false);
         // if (users[id].pw == pw) return done(null, users[id]);

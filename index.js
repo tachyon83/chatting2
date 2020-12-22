@@ -301,14 +301,17 @@ router.post('/user/signin', (req, res, next) => {
                 onlineUsers[member.id] = member
                 onlineUsers[member.id].socketId = socketIds[req.session.id]
                 console.log(socketIds)
-                console.log(socketIds[req.session.id])
-                socketIds[req.session.id].name = member.id
+                // console.log(socketIds[req.session.id])
+                // socketIds[req.session.id].name = member.id
 
                 res.json({
                     response: member.id,
-                    socketId: onlineUsers[member.id].socketId,
+                    // socketId: onlineUsers[member.id].socketId,
                 })
-                io.sockets.connected[onlineUsers[member.id].socketId].emit('test', rooms)
+                // io.sockets.connected[onlineUsers[member.id].socketId].emit('test', rooms)
+                // io.sockets.connected[onlineUsers[member.id].socketId].join(0, () => {
+                //     console.log('joined and in standby after login')
+                // })
             })
 
         } else {
@@ -319,12 +322,21 @@ router.post('/user/signin', (req, res, next) => {
     })(req, res, next)
 })
 
-router.post('/user/signup', (req, res) => {
-    let { username, password } = req.body
-
-    if (users.hasOwnProperty(username)) return res.json({
-        response: false,
+const userDao = require('./models/userDao')
+router.get('/user/idcheck/:id', (req, res) => {
+    userDao.existById(req.params.id, (err, response) => {
+        if (err) return res.json({ response: 'error' })
+        res.json(response)
     })
+})
+router.post('/user/signup', (req, res) => {
+    let password = req.body.password
+    // userDao.existById(req.body.id)
+
+
+    // if (users.hasOwnProperty(username)) return res.json({
+    //     response: false,
+    // })
 
     bcrypt
         .genSalt(saltRounds)
@@ -332,14 +344,22 @@ router.post('/user/signup', (req, res) => {
             return bcrypt.hash(password, salt)
         })
         .then(hash => {
-            users[username] = addNewUser(username, hash)
+            // users[username] = addNewUser(username, hash)
+            req.body.password = hash
+            userDao.signup(req.body, (err, response) => {
+                if (err) return res.json({ response: 'error' })
+                res.json(response)
+            })
             // console.log('inside index users', users)
             // res.redirect('/')
-            console.log(users[username])
+            // console.log(users[username])
             // res.render('index', { user: null })
-            res.json({ response: true })
+            // res.json({ response: true })
         })
-        .catch(err => console.error(err.message))
+        .catch(err => {
+            // console.error(err.message)
+            res.json({ response: 'bcrypt error' })
+        })
 })
 
 router.get('/user/resignin/:user', (req, res) => {
@@ -553,12 +573,12 @@ io.on('connection', socket => {
     // userMap[socket.request.session.passport.user] = socket.id
     // socketMap[socket.id] = socket.request.session.passport.user
     // socket.join(socket.request.session.currRoom, () => {
-    socket.join(0, () => {
-        // rooms[0].roomCnt = io.sockets.adapter.rooms[0].length
-        // users[socketMap[socket.id]].status = 0;
-        console.log('joined')
-        // console.log('io.sockets', io.sockets)
-    });
+    // socket.join(0, () => {
+    //     // rooms[0].roomCnt = io.sockets.adapter.rooms[0].length
+    //     // users[socketMap[socket.id]].status = 0;
+    //     console.log('joined')
+    //     // console.log('io.sockets', io.sockets)
+    // });
     // console.log(socketMap[socket.id] + ' has been connected')
 
     // socket.use('chat',(packet,next)=>{
