@@ -6,33 +6,30 @@ var rooms = require('./models/rooms')
 var roomsCnt = {
     cnt: Object.keys(rooms).length + 1
 }
-var users = require('./models/users').users
-
-const addNewUser = require('./models/users').addNewUser
+// var users = require('./models/users').users
+// const addNewUser = require('./models/users').addNewUser
 
 
 ////////////////// data map //////////////////
-var socketIds = {}
+// var socketIds = {}
 // 0번방은 없다
-var roomUsers = {
-    1: {},
-    2: {},
-}
-var onlineUsers = {}
-var onlineUsersCnt = {
-    cnt: Object.keys(onlineUsers).length + 1
-}
+// var roomUsers = {
+//     1: {},
+//     2: {},
+// }
+// var onlineUsers = {}
+// var onlineUsersCnt = {
+//     cnt: Object.keys(onlineUsers).length + 1
+// }
 //////////////////////////////////////////////
 
 // const url = require('url');
 // const path = require('path'); // OS-independent
 const http = require('http');
+const cookieParser = require('cookie-parser')
 const express = require('express');
 const session = require('express-session');
-
 const passport = require('passport');
-const passportConfig = require('./config/passportConfig');
-const flash = require('connect-flash')
 
 // connect-redis version must be somewhere around 3.#.#
 // now upgraded to 5.0.0
@@ -42,18 +39,12 @@ const redisClient = require('./config/redisClient');
 
 const WatchJS = require("melanke-watchjs")
 const watch = WatchJS.watch;
-// var unwatch = WatchJS.unwatch;
-// var callWatchers = WatchJS.callWatchers;
 
 // important: this [cors] must come before Router
 const cors = require('cors');
-const cookieParser = require('cookie-parser')
-const router = express.Router();
-// const router = require('./routes/router')
+// const router = express.Router();
 const app = express();
 app.set('port', process.env.PORT || 3000);
-// app.set('view engine', 'ejs');
-// app.set('views', __dirname + '/html');
 
 const sessionIntoRedis = (session({
     httpOnly: true, //cannot access via javascript/console
@@ -81,35 +72,32 @@ const sessionIntoRedis = (session({
     } : null,
 }))
 
-// app.use(session({
-//     store: new RedisStore({ client: redisClient }),
-//     secret: 'keyboard cat',
-//     resave: false,
-// }))
-
-const bcrypt = require('bcrypt');
-const saltRounds = 10
-
 app.use(express.json())
-app.use(cookieParser())
-app.use(passport.initialize());
-app.use(passport.session());
-app.use(sessionIntoRedis)
-// flash는 내부적으로 session을 이용하기 때문에 session 보다 아래쪽에서 미들웨어를 설치
-app.use(flash())
-passportConfig();
-
-// app.use('/html', express.static(__dirname + '/html'));
-// app.use(cors())
 app.use(cors({
     origin: true,
     credentials: true,
     preflightContinue: true,
 }));
-// app.use(bodyParser.urlencoded({ extended: false }));
-// app.use(bodyParser.json())
+app.use(sessionIntoRedis)
+app.use(cookieParser())
+app.use(passport.initialize());
+app.use(passport.session());
 
-app.use('/', router);
+app.use('/user', require('./routes/user'));
+
+// app.use(cookieParser)
+// app.use((req, res, next) => {
+//     console.log('app middle session id', req.session.id)
+//     // this is just damn important!
+//     sessionIntoRedis(req, res, next);
+// })
+// flash는 내부적으로 session을 이용하기 때문에 session 보다 아래쪽에서 미들웨어를 설치
+// app.use(flash())
+// passportConfig();
+// app.use('/html', express.static(__dirname + '/html'));
+// app.use(cors())
+
+
 
 /*
     users에서 user정보를 가져오고,
@@ -157,280 +145,23 @@ app.use('/', router);
 */
 
 
-// [방 나가기 함수]는 세션종료를 의미하지 않는다.
-// 소켓도 끊지 않는다.
-// 방을 나가는 과정만 관리한다.
-const roomLeaveProcess = user => {
-    return new Promise((resolve, reject) => {
+// router.get('/user/signout/:user', (req, res) => {
+//     let user = req.params.user
+//     console.log(user)
+//     let socketId = onlineUsers[user].socketId
+//     let socket = io.sockets.connected[socketId]
+//     let session = req.session
+//     let socketSession = socket.request.session
 
-        console.log(onlineUsers[user])
-
-        let userSocketId = onlineUsers[user].socketId
-        let currRoom = onlineUsers[user].status
-        // onlineUsers[user].status = (currRoom === 0) ? -1 : 0
-        onlineUsers[user].status = 0
-        if (currRoom === 0) {
-            // delete onlineUsers[user]
-            // onlineUsersCnt.cnt--;
-            console.log('this user was in lobby')
-            resolve();
-            return
-        }
-
-        console.log('this user was in a room')
-        io.sockets[userSocketId].leave(currRoom, () => {
-            /*
-                방을 선택하지 않았어도 대기실(0번방)에는 첫 시작에 join한다
-                그래서 항상 leave할 수 있다.
-    
-                roomUsers안에는 0번방이 없다.
-                현재 0번방이면 나가는 처리 없이 바로 리턴한다.
-                프론트로 보내주는 유저리스트는 onlineUsers이고,
-                방에 있는 유저에게 보내는 유저리스트는 roomUsers[roomId]
-                대기실에 있는 유저에게 보내는 방 리스트는 rooms
-    
-                cases:
-                    그룹이...있구나...
-                    - 방에 혼자있었을 경우 (해당 소켓은 자동으로 방장이란 뜻)
-                    - 방에 혼자가 아닌 경우:
-                        - 자신이 방장
-                        - 자신은 방장이 아님
-    
-            */
-
-            // if (currRoom != 0) {
-            if (rooms[currRoom].roomCnt == 1) {
-                // 아직 유저정보에 타이틀/직위(방장)에 관한 정보는 없다.
-                delete rooms[currRoom]
-                delete roomUsers[currRoom]
-                roomsCnt.cnt--
-            } else {
-                delete roomUsers[currRoom][user]
-                rooms[currRoom].roomCnt--
-                if (rooms[currRoom].roomOwner == user) {
-                    // 위에서 roomUsers에서 기존 방장은 삭제했기에 바로 다음 사람으로 위임 가능
-                    for (let nextPerson in roomUsers[currRoom]) {
-                        rooms[currRoom].roomOwner = nextPerson
-                        break
-                    }
-                }
-            }
-            // }
-            resolve()
-        })
-    })
-}
-
-// 회원가입시에 users에 등록했을테니
-// 로그인시에는 users에 빼온다, 그리고 users에서 status변경
-const signInProcess = user => {
-
-    // socket.name and socket.join are handled in socket.io middleware
-
-    console.log('user in signInProcess', user)
-    console.log(users[user].status)
-    onlineUsers[user] = users[user]
-    onlineUsers[user].status = 0
-    onlineUsersCnt.cnt++;
-}
-
-// 아래의 함수는 소켓이 끊어질 때만 불리는 함수다.
-// 로그아웃을 통해 이 함수를 부르는 것이 아니다.
-// 로그아웃이 버튼이 눌리면 프론트에서 manually 소켓을 끊어주게 되고,
-// 소켓이 끊어지는 이벤트에서 아래 함수가 호출된다.
-const signOutProcess = user => {
-
-    // 여기서 먼저 소켓 관련 처리도 마무리해주고,
-    // 소켓이벤트에서는 해당 property 존재 여부 확인 후 처리한다.
-
-    /*
-        variables to be concerned:
-            rooms
-            roomsCnt.cnt
-            users
-            roomUsers
-            onlineUsers
-            onlineUsersCnt
-            
-            socket (leave & disconnect)
-            session?
-    */
-
-    // roomLeaveProcess(user)
-    onlineUsers[user].socketId = null
-    delete onlineUsers[user]
-    onlineUsersCnt.cnt--;
-
-}
-
-router.post('/user/signin', (req, res, next) => {
-    passport.authenticate('local', (err, member, info) => {
-        if (err) return next(err);
-        if (member) {
-            // when using custom callback, need to use req.logIn()
-            // req.session.save(() => {
-            //     req.logIn(member, (err) => {
-            //         if (err) return next(err)
-            //         // res.cookie('username', member.id, { maxAge: 5 * 60 * 1000 })
-            //         // res.header('Access-Control-Allow-Credentials', 'true');
-            //         console.log('login successful')
-            //         onlineUsers[member.id] = member
-
-            //         // onlineUsers[member.id].socketId = socketIds[req.session.id]
-
-            //         // var io = socketio.listen(server, {
-            //         //     cors: {
-            //         //         origin: true,
-            //         //         credentials: true,
-            //         //     }
-            //         // });
-            //         console.log(req.session)
-            //         require('./io')(io)
-            //         return res.json({
-            //             response: member.id,
-            //             socketId: onlineUsers[member.id].socketId,
-            //         })
-            //     })
-
-            // })
-            req.logIn(member, (err) => {
-                if (err) return next(err)
-                // res.cookie('username', member.id, { maxAge: 5 * 60 * 1000 })
-                // res.header('Access-Control-Allow-Credentials', 'true');
-                console.log('login successful')
-                onlineUsers[member.id] = member
-                onlineUsers[member.id].socketId = socketIds[req.session.id]
-                console.log(socketIds)
-                // console.log(socketIds[req.session.id])
-                // socketIds[req.session.id].name = member.id
-
-                res.json({
-                    response: member.id,
-                    // socketId: onlineUsers[member.id].socketId,
-                })
-                // io.sockets.connected[onlineUsers[member.id].socketId].emit('test', rooms)
-                // io.sockets.connected[onlineUsers[member.id].socketId].join(0, () => {
-                //     console.log('joined and in standby after login')
-                // })
-            })
-
-        } else {
-            console.log(req.flash('error'))
-            console.log('login failed')
-            res.json({ response: false })
-        }
-    })(req, res, next)
-})
-
-const userDao = require('./models/userDao')
-router.get('/user/idcheck/:id', (req, res) => {
-    userDao.existById(req.params.id, (err, response) => {
-        if (err) return res.json({ response: 'error' })
-        res.json(response)
-    })
-})
-router.post('/user/signup', (req, res) => {
-    let password = req.body.password
-    // userDao.existById(req.body.id)
-
-
-    // if (users.hasOwnProperty(username)) return res.json({
-    //     response: false,
-    // })
-
-    bcrypt
-        .genSalt(saltRounds)
-        .then(salt => {
-            return bcrypt.hash(password, salt)
-        })
-        .then(hash => {
-            // users[username] = addNewUser(username, hash)
-            req.body.password = hash
-            userDao.signup(req.body, (err, response) => {
-                if (err) return res.json({ response: 'error' })
-                res.json(response)
-            })
-            // console.log('inside index users', users)
-            // res.redirect('/')
-            // console.log(users[username])
-            // res.render('index', { user: null })
-            // res.json({ response: true })
-        })
-        .catch(err => {
-            // console.error(err.message)
-            res.json({ response: 'bcrypt error' })
-        })
-})
-
-router.get('/user/resignin/:user', (req, res) => {
-    let user = req.params.user
-    let socketId = onlineUsers[user].socketId
-    let socket = io.sockets.connected[socketId]
-    let socketSession = (socket.request.session.id == req.session.id) ? null : socket.request.session
-
-    res.locals.basicInfo = {
-        basicInfo: JSON.stringify({
-            userId: user,
-            rooms: rooms,
-            roomNumber: 0,
-        })
-    }
-    console.log('resignin process on going')
-
-    socket.disconnect()
-    if (socketSession) {
-        socketSession.destroy(_ => {
-            // res.render('chatLobby', res.locals.basicInfo)
-        })
-    }
-    // else res.render('chatLobby', res.locals.basicInfo)
-
-    // roomLeaveProcess(user).then(_ => {
-    //     socket.disconnect();
-    //     // onlineUsers[user].socketId = null
-    //     if (socketSession) {
-    //         socketSession.destroy(_ => {
-    //             res.render('chatLobby', res.locals.basicInfo)
-    //         })
-    //     } else res.render('chatLobby', res.locals.basicInfo)
-    // })
-})
-
-router.get('/user/signout/:user', (req, res) => {
-    let user = req.params.user
-    console.log(user)
-    let socketId = onlineUsers[user].socketId
-    let socket = io.sockets.connected[socketId]
-    let session = req.session
-    let socketSession = socket.request.session
-
-    socket.disconnect();
-    console.log('socket disconnected')
-    req.session.destroy(_ => {
-        signOutProcess(user);
-        if (session.id != socketSession.id) socketSession.destroy(_ => {
-            // res.render('index', { user: null })
-        })
-        // else res.render('index', { user: null })
-    })
-
-    // roomLeaveProcess(user).then(_ => {
-    //     console.log('roomLeaveProcess done')
-    //     signOutProcess(user)
-    //     socket.disconnect();
-    //     console.log('socket disconnected')
-    //     // console.log(socket)
-    //     req.session.destroy(_ => {
-    //         if (session.id != socketSession.id) socketSession.destroy(_ => {
-    //             res.render('index', { user: null })
-    //         })
-    //         else res.render('index', { user: null })
-    //     })
-    // })
-})
-
-// router.get('/onlineUsers/list', (req, res) => {
-//     res.json(io.sockets.connected)
+//     socket.disconnect();
+//     console.log('socket disconnected')
+//     req.session.destroy(_ => {
+//         signOutProcess(user);
+//         if (session.id != socketSession.id) socketSession.destroy(_ => {
+//             // res.render('index', { user: null })
+//         })
+//         // else res.render('index', { user: null })
+//     })
 // })
 
 // 아래의 라우터는 사용하지 않는다.
@@ -484,10 +215,7 @@ router.get('/user/signout/:user', (req, res) => {
 // app.get('/profile/success',middleware,function(req,res){
 //     res.send(req.user);
 // })
-// function middleware(req,res,next){
-//     if(req.isAuthenticated())return next();
-//     res.sendFile(__dirname + '/html/signin.html');
-// }
+
 
 const server = http.createServer(app);
 server.listen(app.get('port'), () => {
@@ -495,8 +223,7 @@ server.listen(app.get('port'), () => {
 });
 
 const socketio = require('socket.io');
-// const { resolve } = require('path')
-// const { json } = require('express')
+
 const io = socketio.listen(server, {
     cors: {
         origin: true,
@@ -504,54 +231,80 @@ const io = socketio.listen(server, {
     }
 });
 
-watch(roomsCnt, () => {
-    console.log('watched: a new room made')
-    // console.log('io.in(0)', io.in(0))
-    io.to(0).emit('room.list.response', rooms)
-    console.log('maybe emitted')
-})
-watch(rooms, () => {
-    console.log('watched: [rooms]changes made')
-    io.to(0).emit('room.list.response', rooms)
-})
+// watch(roomsCnt, () => {
+//     console.log('watched: a new room made')
+//     // console.log('io.in(0)', io.in(0))
+//     io.to(0).emit('room.list.response', rooms)
+//     console.log('maybe emitted')
+// })
+// watch(rooms, () => {
+//     console.log('watched: [rooms]changes made')
+//     io.to(0).emit('room.list.response', rooms)
+// })
 // watch(rooms, [rooms, roomCnt], () => {
 //     console.log('watched: [rooms]changes made')
 //     io.to(0).emit('room.list.response', rooms)
 // })
 
 io.use((socket, next) => {
-    console.log('io middle', socket.id)
+    console.log('io middle socket id: ', socket.id)
     // this is just damn important!
     sessionIntoRedis(socket.request, socket.request.res || {}, next);
 })
 // io.use((socket, next) => {
-//     console.log(socket.id)
-//     // redisClient.get('sess:' + socket.request.session.id, (err, value) => {
-//     //     if (err) throw err;
-//     //     console.log('redisClient.get', value)
-//     //     console.log(this)
-//     //     this.sessionId = value
-//     //     // console.log('socket.req.session.id', socket.request.session.id)
-//     // })
+//     // console.log(socket.id)
+//     redisClient.get('sess:' + socket.request.session.id, (err, value) => {
+//         if (err) throw err;
+//         console.log('redisClient.get', value)
+//         console.log('session in socket', socket.request.session.id)
+//     })
 //     next();
 // })
 
-var timestamp = null;
+// var timestamp = null;
+
+const fromSessionIdToSocketConnector = (sessionId, socket) => {
+    return new Promise((resolve, reject) => {
+        console.log(sessionId)
+        redisClient.hget('sessionMap', sessionId, (err, userId) => {
+            if (err) reject(err)
+            socket.userId = userId
+            console.log('1st hget userId', userId)
+            redisClient.hget('onlineUsers', userId, (err, user) => {
+                if (err) reject(err)
+                user = JSON.parse(user)
+                user.socketId = socket.id
+                console.log('2nd hget user', user)
+                redisClient.hmset('onlineUsers', {
+                    [userId]: JSON.stringify(user)
+                })
+                resolve()
+            })
+        })
+    })
+}
 
 io.on('connection', socket => {
-    // console.log(this)
-    // console.log(socket.request.headers.cookie)
-    // console.log(socket.request)
-    console.log(socket.request.session)
-    console.log(socket.request.session.id)
-    // onlineUsers[socket.request.session.passport.id].socketId = socket.id
-    // socketIds[socket.request.headers.cookie] = socket.id
-    socketIds[socket.request.session.id] = socket.id
-    // socket.name = socket.request.session.passport.user
-    // console.log('now name attached', socket.name)
-    // onlineUsers[socket.name].socketId = socket.id
+    // sessionMap, onlineUsers
+    // 아래 과정에서 에러 발생시, 중단 처리 관련하여 고민 필요
+    fromSessionIdToSocketConnector(socket.request.session.id, socket)
+        .then(() => {
+            console.log('finally a socket is connected and ready to be used!');
+            socket.emit('test', rooms)
+            socket.join(0, () => {
+                redisClient.sadd('0', socket.userId)
+                socket.pos = 0
+                console.log('joined 0 and in standby after login')
+            })
+        })
+        .catch(err => console.log(err))
 
-    // socket.emit('test', rooms)
+    // socketIds[socket.request.headers.cookie] = socket.id
+    //     io.sockets.connected[socketId].emit('test', rooms)
+    //     io.sockets.connected[socketId].join(0, () => {
+    //         console.log('joined and in standby after login')
+    //         res.json({ response: member.id, })
+    //     })
 
     socket.use((packet, next) => {
         let currTime = new Date();
@@ -559,19 +312,12 @@ io.on('connection', socket => {
         // if (socket.request.session.passport) return next();
         // socket.disconnect();
         // console.log('this session is expired')
-        if (socket.name) {
-
+        if (socket.userId) {
+            console.log('this socket is authenticated')
             next()
         }
     })
-    // console.log('userMap', userMap)
-    // console.log('socket.req.session', socket.request.session)
-    // socket.emit('test', rooms)
 
-    // socket.name might be able to replace socketMap
-    // console.log('socket.name', socket.name)
-    // userMap[socket.request.session.passport.user] = socket.id
-    // socketMap[socket.id] = socket.request.session.passport.user
     // socket.join(socket.request.session.currRoom, () => {
     // socket.join(0, () => {
     //     // rooms[0].roomCnt = io.sockets.adapter.rooms[0].length
@@ -580,8 +326,6 @@ io.on('connection', socket => {
     //     // console.log('io.sockets', io.sockets)
     // });
     // console.log(socketMap[socket.id] + ' has been connected')
-
-    // socket.use('chat',(packet,next)=>{
 
     socket.on('profile.list', () => {
         socket.emit('profile.list.response', io.sockets.connected)
@@ -654,27 +398,27 @@ io.on('connection', socket => {
 
     // })
 
-    socket.on('manualDisconnectByServer', () => {
-
-        console.log('manual disconnect order received')
-
-        let disconnectedUser = socket.request.session.passport.user
-        signOutProcess(disconnectedUser)
-        console.log(disconnectedUser + ' has been disconnected');
-        io.emit('manualDisconnectionComplete')
-
-        // 다른 브라우저로 새로운 세션을 만들어 들어왔을 때,
-        // 기존 소켓이 끊어지고, 세션이 남는것인지? 그렇다면 그 남은 세션이 
-        // 누적되었을 때 발생할 수 있는 문제는...?
-
-
-    })
-
     socket.on('disconnecting', reason => {
-        console.log(reason);
-        // console.log(socket.request.session.passport)
-        console.log(socket.id)
-        console.log(io.sockets.adapter.rooms[0].length)
+        // 방을 나가고 (0번방에서도 나가기)
+        // onlineUsers, sessionMap 정리
+        // session.destroy
+
+        // signout시에 socket disconnect를 일으켜서 아래 부분으로 들어오도록 처리
+        console.log('disconnecting reason', reason);
+        console.log('does this socket still have passport?', socket.request.session.passport)
+        if (reason === 'transport close' && socket.request.session) {
+            if (socket.pos === 0) {
+                socket.leave(0)
+                redisClient.srem('0', socket.userId)
+                redisClient.hdel('onlineUsers', socket.userId)
+                redisClient.hdel('sessionMap', socket.request.session.id)
+                socket.request.session.destroy()
+            } else {
+                socket.leave(socket.pos)
+                socket.to(socket.pos).emit('user.leave', socket.userId)
+            }
+        }
+        // console.log(io.sockets.adapter.rooms[0].length)
 
         // roomLeaveProcess(socket.name).then(_ => {
         //     // if (reason == 'client namespace disconnect') {

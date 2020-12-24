@@ -1,17 +1,5 @@
 // join date, group name, pw hint, title?(room owner)
 // login time, logout time
-const bcrypt = require('bcrypt');
-const saltRounds = 10
-
-// const encrypt = (saltRounds, password) => {
-//     let res = null
-//     bcrypt.genSalt(saltRounds).then(salt => {
-//         return bcrypt.hash(password, salt)
-//     }).then(hash => {
-//         res = hash
-//     }).catch(err => console.error(err.message))
-//     return res
-// }
 
 module.exports = {
     users: {
