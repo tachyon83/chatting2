@@ -1,32 +1,16 @@
-// onlineUsers로 내려받아서 관리하고, 
-// 일정 주기로 DB에 업뎃하는 방식
-// onlineUsers가 Redis로 관리되어야 하는 대표적인 형태
-
-var rooms = require('./models/rooms')
-var roomsCnt = {
-    cnt: Object.keys(rooms).length + 1
-}
-// var users = require('./models/users').users
-// const addNewUser = require('./models/users').addNewUser
-
-
 ////////////////// data map //////////////////
-// var socketIds = {}
-// 0번방은 없다
-// var roomUsers = {
-//     1: {},
-//     2: {},
-// }
-// var onlineUsers = {}
-// var onlineUsersCnt = {
-//     cnt: Object.keys(onlineUsers).length + 1
-// }
+
+// roomsUsers => redisClient.sadd('0',socket.userId)
+// onlineUsers => redisClient.hmset('onlineUsers', {[userId]: JSON.stringify(user)})
+// sessionMap => redisClient.hget('sessionMap', sessionId, (err, userId) => { })
+// socket.userId, socket.pos
+
 //////////////////////////////////////////////
 
 // const url = require('url');
 // const path = require('path'); // OS-independent
 const http = require('http');
-const cookieParser = require('cookie-parser')
+// const cookieParser = require('cookie-parser')
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
@@ -34,68 +18,36 @@ const passport = require('passport');
 // connect-redis version must be somewhere around 3.#.#
 // now upgraded to 5.0.0
 // const redis = require('redis')
-const RedisStore = require("connect-redis")(session);
+const webSettings = require('./config/webSettings')
 const redisClient = require('./config/redisClient');
 
 const WatchJS = require("melanke-watchjs")
 const watch = WatchJS.watch;
 
+const app = express();
+app.set('port', process.env.PORT || 3000);
 // important: this [cors] must come before Router
 const cors = require('cors');
 // const router = express.Router();
-const app = express();
-app.set('port', process.env.PORT || 3000);
-
-const sessionIntoRedis = (session({
-    httpOnly: true, //cannot access via javascript/console
-    secure: true, //https only
-    secret: 'secret secretary',
-    resave: false,
-    saveUninitialized: false,
-    store: new RedisStore({
-        client: redisClient,
-        ttl: 60 * 60,
-        // host: 'localhost',
-        // port: 6379,
-        // prefix: 'session',
-        // db: 0,
-        // saveUninitialized: false,
-        // resave: false
-    }),
-    cookie: (process.env.NODE_ENV === 'production') ? {
-        httpOnly: true,
-        // path: corsSettings.origin,
-        // sameSite: 'lax',
-        sameSite: 'none',
-        secure: true,
-        maxAge: 1000 * 60 * 10,
-    } : null,
-}))
 
 app.use(express.json())
-app.use(cors({
-    origin: true,
-    credentials: true,
-    preflightContinue: true,
-}));
-app.use(sessionIntoRedis)
-app.use(cookieParser())
+app.use(session(webSettings.sessionRedisSettings))
+app.use(cors(webSettings.corsSettings));
+// app.use(cookieParser())
 app.use(passport.initialize());
 app.use(passport.session());
-
-app.use('/user', require('./routes/user'));
-
-// app.use(cookieParser)
-// app.use((req, res, next) => {
-//     console.log('app middle session id', req.session.id)
-//     // this is just damn important!
-//     sessionIntoRedis(req, res, next);
-// })
 // flash는 내부적으로 session을 이용하기 때문에 session 보다 아래쪽에서 미들웨어를 설치
 // app.use(flash())
-// passportConfig();
-// app.use('/html', express.static(__dirname + '/html'));
-// app.use(cors())
+
+
+app.use((req, res, next) => {
+    console.log('server call: ', new Date())
+    next()
+})
+app.use('/user', require('./routes/user'));
+
+
+
 
 
 
@@ -249,7 +201,7 @@ const io = socketio.listen(server, {
 io.use((socket, next) => {
     console.log('io middle socket id: ', socket.id)
     // this is just damn important!
-    sessionIntoRedis(socket.request, socket.request.res || {}, next);
+    session(socket.request, socket.request.res || {}, next);
 })
 // io.use((socket, next) => {
 //     // console.log(socket.id)
@@ -295,16 +247,18 @@ io.on('connection', socket => {
                 redisClient.sadd('0', socket.userId)
                 socket.pos = 0
                 console.log('joined 0 and in standby after login')
+                redisClient.hget('onlineUsers', socket.userId, (err, user) => {
+                    if (err) throw err
+                    user = JSON.parse(user)
+                    user.status = 0
+                    redisClient.hmset('onlineUsers', {
+                        [socket.userId]: JSON.stringify(user)
+                    })
+                })
             })
         })
         .catch(err => console.log(err))
 
-    // socketIds[socket.request.headers.cookie] = socket.id
-    //     io.sockets.connected[socketId].emit('test', rooms)
-    //     io.sockets.connected[socketId].join(0, () => {
-    //         console.log('joined and in standby after login')
-    //         res.json({ response: member.id, })
-    //     })
 
     socket.use((packet, next) => {
         let currTime = new Date();

@@ -58,6 +58,12 @@ router.get('/idcheck/:id', (req, res) => {
     })
 })
 
+router.get('/signout', (req, res) => {
+    req.session.destroy(err => {
+
+    })
+})
+
 router.post('/signup', (req, res) => {
     let password = req.body.password
 
