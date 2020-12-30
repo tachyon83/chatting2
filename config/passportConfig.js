@@ -20,8 +20,8 @@ module.exports = () => {
     passport.serializeUser((user, done) => {
         // when done, req.session.passport.user에 저장!
         console.log('now serialized')
-        if (user) return done(null, user.id);
-        return done(null, null)
+        if (user) done(null, user.id);
+        // return done(null, null)
     })
     passport.deserializeUser((id, done) => {
         // console.log('session', req.session) <-undefined maybe
@@ -50,6 +50,7 @@ module.exports = () => {
                 bcrypt.compare(pw, user.password, (err, res) => {
                     if (err) return done(err, false)
                     if (res) return done(null, user)
+                    else return done(null, false)
                 })
             }
             else return done(null, false)

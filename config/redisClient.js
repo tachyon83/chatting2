@@ -1,5 +1,8 @@
-const redisSetting = require('./redisSetting')
+// connect-redis version must be somewhere around 3.#.#
+// now upgraded to 5.0.0
+// const redis = require('redis')
 const redis = require('redis')
+const redisSetting = require('./redisSetting')
 const redisClient = redis.createClient(process.env.REDIS_URL || { port: redisSetting.port, host: redisSetting.host })
 
 // ***********************   to use in heroku   ***********************

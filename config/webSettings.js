@@ -1,7 +1,9 @@
+const session = require('express-session');
 const RedisStore = require("connect-redis")(session);
+const redisClient = require('../config/redisClient');
 
 module.exports = {
-    sessionRedisSettings: {
+    sessionRedisMiddleware: session({
         // httpOnly: true, //cannot access via javascript/console
         // secure: true, //https only
         secret: 'secret secretary',
@@ -23,7 +25,7 @@ module.exports = {
             secure: true,
             maxAge: 1000 * 60 * 60, // 1 hour
         } : null,
-    },
+    }),
 
     corsSettings: {
         origin: true,
