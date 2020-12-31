@@ -37,7 +37,9 @@ class Dao {
     }
 
     existById = (id, fn) => {
+        console.log('id in exist', id)
         this.sqlHandler(sqls.sql_existById, id, fn).then(res => {
+            console.log(res[0].cnt)
             if (res[0].cnt > 0) return fn(null, false)
             fn(null, true)
         }).catch(err => {

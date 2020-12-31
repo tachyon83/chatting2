@@ -1,6 +1,6 @@
-const packetHandler = require('./packetHandler')
+const responseHandler = require('./responseHandler')
 
 module.exports = err => {
     console.log(err)
-    return packetHandler(false, err.reason, null)
+    return responseHandler(false, err.reason, null)
 }

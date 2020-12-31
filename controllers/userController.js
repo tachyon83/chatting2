@@ -1,10 +1,10 @@
 const redisClient = require('../config/redisClient');
 const userDao = require('../models/userDao')
+const roomLeaveProcess = require('../utils/roomLeaveProcess')
 const bcrypt = require('bcrypt');
 const saltRounds = 10
 const passport = require('passport');
-const passportConfig = require('../config/passportConfig');
-passportConfig()
+
 
 module.exports = {
     signIn: (req, res, next) => {
@@ -22,7 +22,6 @@ module.exports = {
                     redisClient.hmset('onlineUsers', {
                         [member.id]: JSON.stringify(member),
                     })
-                    console.log('session id when login', req.session.id)
                     console.log('login successful')
                     res.json({
                         result: true,
@@ -91,9 +90,20 @@ module.exports = {
 
     signOut: io => {
         return (req, res, next) => {
-            req.session.destroy(err => {
+            redisClient.hget('onlineUsers', req.session.passport.user, (err, user) => {
                 if (err) return next(err)
-                console.log('signed out')
+                user = JSON.parse(user)
+                let socket = io.sockets.connected[user.socketId]
+                console.log('rooms', io.sockets.adapter.rooms)
+                roomLeaveProcess(socket).then(() => {
+                    redisClient.hdel('onlineUsers', user.id)
+                    redisClient.hdel('sessionMap', req.session.id)
+                    socket.disconnect()
+                    req.session.destroy(err => {
+                        if (err) return next(err)
+                        console.log('signed out')
+                    })
+                })
             })
         }
     }

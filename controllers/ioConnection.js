@@ -1,5 +1,5 @@
-const redisClient = require('../../config/redisClient');
-const sessionToSocket = require('../../utils/sessionToSocket')
+const redisClient = require('../config/redisClient');
+const sessionToSocket = require('../utils/sessionToSocket')
 
 module.exports = io => {
     io.on('connection', socket => {
@@ -7,22 +7,25 @@ module.exports = io => {
         sessionToSocket(socket.request.session.id, socket)
             .then(() => {
                 console.log('finally a socket is connected and ready to be used!');
-                socket.join(0, () => {
+                socket.join('0', () => {
                     redisClient.sadd('0', socket.userId)
-                    socket.pos = 0
+                    socket.pos = '0'
                     console.log('joined 0 and in standby after login')
                     redisClient.hget('onlineUsers', socket.userId, (err, user) => {
                         if (err) throw err
                         user = JSON.parse(user)
-                        user.status = 0
+                        user.status = '0'
                         redisClient.hmset('onlineUsers', {
                             [socket.userId]: JSON.stringify(user)
                         })
                     })
+                    console.log(Object.keys(io.sockets.adapter.rooms))
+                    console.log(io.sockets.adapter.rooms['0'].sockets)
+                    console.log(Object.keys(io.sockets.adapter.rooms['0'].sockets))
                 })
             })
             .catch(err => console.log(err))
 
-        require('../socketEvents/roomEvents')(socket)
+        // require('./socketEvents/roomEvents')(socket)
     })
 }

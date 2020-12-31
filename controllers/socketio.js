@@ -18,6 +18,6 @@ module.exports = io => {
         next()
     })
 
-    require('./ioEvents/ioConnection')(io)
+    require('./ioConnection')(io)
 
 }

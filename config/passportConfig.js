@@ -24,12 +24,15 @@ module.exports = () => {
         // return done(null, null)
     })
     passport.deserializeUser((id, done) => {
+        // at first req.session.passport is not defined
+        // throught this 'deserialize' process, passport is attached
+
         // console.log('session', req.session) <-undefined maybe
         // console.log('deserialize called and req.user is registered')
 
         userDao.existById(id, (err, response) => {
             if (err) return done(err, null)
-            return done(null, response ? id : null)
+            return done(null, response ? null : id)
         })
 
         // now user is registered into req.user
