@@ -99,8 +99,12 @@ module.exports = {
                     redisClient.hdel('onlineUsers', user.id)
                     redisClient.hdel('sessionMap', req.session.id)
                     socket.disconnect()
+                    req.logOut()
                     req.session.destroy(err => {
                         if (err) return next(err)
+                        res.status(200).clearCookie('connect.sid').json({
+                            result: true
+                        })
                         console.log('signed out')
                     })
                 })
