@@ -1,5 +1,6 @@
 const redisClient = require('../config/redisClient');
 const userDao = require('../models/userDao')
+const resCode = require('../config/resCode')
 const roomLeaveProcess = require('../utils/roomLeaveProcess')
 const bcrypt = require('bcrypt');
 const saltRounds = 10
@@ -50,8 +51,8 @@ module.exports = {
                 packet: null,
             })
             res.json({
-                result: response,
-                code: response ? 0 : 1,
+                result: !response,
+                code: response ? 1 : 0,
                 packet: null,
             })
         })
@@ -91,23 +92,32 @@ module.exports = {
     signOut: io => {
         return (req, res, next) => {
             redisClient.hget('onlineUsers', req.session.passport.user, (err, user) => {
-                if (err) return next(err)
+                // redisClient.hget('onlineUsers', req.params.id, (err, user) => {
+                console.log(err)
+                console.log(user)
+                if (err) {
+                    console.log('err err', err)
+                    return res.json({ response: err })
+                    // return next(err)
+                }
+                if (!user) return res.json({ response: 'no user' })
                 user = JSON.parse(user)
                 let socket = io.sockets.connected[user.socketId]
-                console.log('rooms', io.sockets.adapter.rooms)
-                roomLeaveProcess(socket).then(() => {
-                    redisClient.hdel('onlineUsers', user.id)
-                    redisClient.hdel('sessionMap', req.session.id)
-                    socket.disconnect()
-                    req.logOut()
-                    req.session.destroy(err => {
-                        if (err) return next(err)
-                        res.status(200).clearCookie('connect.sid').json({
-                            result: true
-                        })
-                        console.log('signed out')
-                    })
-                })
+                socket.disconnect()
+                // console.log('rooms', io.sockets.adapter.rooms)
+                // roomLeaveProcess(socket).then(() => {
+                //     redisClient.hdel('onlineUsers', user.id)
+                //     redisClient.hdel('sessionMap', req.session.id)
+                //     socket.disconnect()
+                //     req.logOut()
+                //     req.session.destroy(err => {
+                //         if (err) return next(err)
+                //         res.status(200).clearCookie('connect.sid').json({
+                //             result: true
+                //         })
+                //         console.log('signed out')
+                //     })
+                // })
             })
         }
     }

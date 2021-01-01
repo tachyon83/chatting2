@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const userDao = require('../models/userDao')
+const redisClient = require('../config/redisClient');
 
 module.exports = () => {
 
@@ -30,10 +31,15 @@ module.exports = () => {
         // console.log('session', req.session) <-undefined maybe
         // console.log('deserialize called and req.user is registered')
 
-        userDao.existById(id, (err, response) => {
+        redisClient.hget('onlineUsers', id, (err, user) => {
             if (err) return done(err, null)
-            return done(null, response ? null : id)
+            return done(null, user ? id : null)
         })
+
+        // userDao.existById(id, (err, response) => {
+        //     if (err) return done(err, null)
+        //     return done(null, response ? id : null)
+        // })
 
         // now user is registered into req.user
         // Cookie 의 secure 설정이 true 인 경우 deserialize불가

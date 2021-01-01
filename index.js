@@ -49,7 +49,8 @@ app.use((req, res, next) => {
     let currTime = new Date();
     let timeStamp = currTime.getHours() + ':' + currTime.getMinutes();
     console.log('Server Call : ', timeStamp)
-    console.log(req.session.cookie)
+    // console.log(req.session.cookie)
+    console.log(req.isAuthenticated())
     next()
 })
 app.use('/user', require('./routes/user')(io));

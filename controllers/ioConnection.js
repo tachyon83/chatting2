@@ -1,5 +1,7 @@
 const redisClient = require('../config/redisClient');
 const sessionToSocket = require('../utils/sessionToSocket')
+const roomLeaveProcess = require('../utils/roomLeaveProcess')
+
 
 module.exports = io => {
     io.on('connection', socket => {
@@ -25,6 +27,28 @@ module.exports = io => {
                 })
             })
             .catch(err => console.log(err))
+
+        socket.on('disconnecting', reason => {
+            // 방을 나가고 (0번방에서도 나가기)
+            // onlineUsers, sessionMap 정리
+            // session.destroy
+
+            console.log('disconnecting reason', reason);
+
+            if (reason === 'server namespace disconnect' || reason === 'transport close') {
+                roomLeaveProcess(socket).then(() => {
+                    redisClient.hdel('onlineUsers', socket.userId)
+                    redisClient.hdel('sessionMap', socket.request.session.id)
+
+                    socket.request.logOut()
+                    socket.request.session.destroy(err => {
+                        if (err) return socket.emit('system.error', { packet: err })
+                        socket.emit('system.signout')
+                        console.log('looks like working fine?')
+                    })
+                })
+            }
+        })
 
         // require('./socketEvents/roomEvents')(socket)
     })

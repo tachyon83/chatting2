@@ -24,6 +24,7 @@
     "melanke-watchjs": "^1.5.2",
     "morgan": "^1.10.0",
     "mysql": "^2.18.1",
+    "node-fetch": "^2.6.1",
     "passport": "^0.4.1",
     "passport-local": "^1.0.0",
     "path": "^0.12.7",
