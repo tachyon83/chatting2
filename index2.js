@@ -1,8 +1,56 @@
 // important: this [cors] must come before Router
 const cors = require('cors');
+// const events = require('events')
 const app = require('express')()
 app.set('port', process.env.PORT || 3000);
 app.use(cors());
+
+// const eventEmitter = new events.EventEmitter()
+const evTester = require('./index2test')
+
+const redisClient = require('./config/redisClient')
+redisClient.hkeys('testHm', (err, keys) => {
+    if (err) return console.log(err)
+    // if (!keys.length) console.log('hkeys', keys)
+    console.log('hkeys', keys)
+})
+redisClient.rpush('testList', 1)
+redisClient.rpush('testList', 1)
+redisClient.rpush('testList', 1)
+redisClient.rpush('testList', 1)
+redisClient.rpush('testList', 1)
+redisClient.rpush('testList', 1)
+redisClient.rpush('testList', 1)
+redisClient.rpush('testList', 1)
+redisClient.lrange('testList', 0, 5, (err, list) => {
+    if (err) console.log(err)
+    console.log(list)
+})
+redisClient.lrange('test111', 0, 15, (err, list) => {
+    if (err) console.log('test111 err', err)
+    console.log('test111 list', list)
+})
+
+redisClient.llen('chatLog', (err, len) => {
+    if (err) return console.log(err)
+    console.log('len', len)
+    if (!len) return console.log(len)
+    redisClient.lrange('chatLog', 0, 5 - 1, (err, list) => {
+        if (err) return console.log(err)
+        redisClient.ltrim('chatLog', 5, -1)
+        console.log(list)
+    })
+})
+
+
+const eventHandler = () => {
+    redisClient.smembers('testSet', (err, members) => {
+        if (err) console.log(err)
+        console.log(members)
+    })
+}
+evTester.evEmitter.on('test123', eventHandler)
+evTester.tester()
 
 const server = require('http').createServer(app);
 // const io = require('socket.io').listen(server);

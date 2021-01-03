@@ -19,4 +19,8 @@ const redisClient = redis.createClient(process.env.REDIS_URL || { port: redisSet
 redisClient.on('error', function (err) {
     console.log('Redis error: ' + err)
 })
+
+const dataMap = require('../config/dataMap')
+redisClient.set(dataMap.nextRoomId, '1')
+
 module.exports = redisClient

@@ -9,6 +9,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const userDao = require('../models/userDao')
 const redisClient = require('../config/redisClient');
+const dataMap = require('./dataMap')
 
 module.exports = () => {
 
@@ -31,7 +32,7 @@ module.exports = () => {
         // console.log('session', req.session) <-undefined maybe
         // console.log('deserialize called and req.user is registered')
 
-        redisClient.hget('onlineUsers', id, (err, user) => {
+        redisClient.hget(dataMap.onlineUserHm, id, (err, user) => {
             if (err) return done(err, null)
             return done(null, user ? id : null)
         })

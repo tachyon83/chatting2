@@ -31,5 +31,13 @@ module.exports = {
         origin: true,
         credentials: true,
         preflightContinue: true,
+    },
+
+    socketSettings: {
+        cors: {
+            origin: true,
+            credentials: true,
+        },
+        pingTimeout: 1000 * 60 * 60,
     }
 }

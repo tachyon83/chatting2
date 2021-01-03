@@ -1,7 +1,8 @@
 const redisClient = require('../config/redisClient');
+const dataMap = require('../config/dataMap')
 const userDao = require('../models/userDao')
 const resCode = require('../config/resCode')
-const roomLeaveProcess = require('../utils/roomLeaveProcess')
+const responseHandler = require('../utils/responseHandler')
 const bcrypt = require('bcrypt');
 const saltRounds = 10
 const passport = require('passport');
@@ -17,50 +18,33 @@ module.exports = {
                 req.logIn(member, (err) => {
                     if (err) return next(err)
 
-                    redisClient.hmset('sessionMap', {
+                    redisClient.hmset(dataMap.sessionUserMap, {
                         [req.session.id]: member.id,
                     })
-                    redisClient.hmset('onlineUsers', {
+                    redisClient.hmset(dataMap.onlineUserHm, {
                         [member.id]: JSON.stringify(member),
                     })
                     console.log('login successful')
-                    res.json({
-                        result: true,
-                        code: 0,
-                        packet: member.id,
-                    })
+                    res.json(responseHandler(true, resCode.success, member.id))
                 })
 
             } else {
                 // console.log(req.flash('error'))
                 console.log('login failed')
-                res.json({
-                    result: false,
-                    code: 2,
-                    packet: null,
-                })
+                res.json(responseHandler(false, resCode.wrong, null))
             }
         })(req, res, next)
     },
 
     idCheck: (req, res, next) => {
         userDao.existById(req.params.id, (err, response) => {
-            if (err) return res.json({
-                result: false,
-                code: 3,
-                packet: null,
-            })
-            res.json({
-                result: !response,
-                code: response ? 1 : 0,
-                packet: null,
-            })
+            if (err) return next(err)
+            res.json(responseHandler(!response, response ? resCode.exist : resCode.success, null))
         })
     },
 
     signUp: (req, res, next) => {
         let password = req.body.password
-
         bcrypt
             .genSalt(saltRounds)
             .then(salt => {
@@ -70,41 +54,29 @@ module.exports = {
                 // users[username] = addNewUser(username, hash)
                 req.body.password = hash
                 userDao.signup(req.body, (err, response) => {
-                    if (err) next(err)
-                    res.json({
-                        result: response,
-                        code: 0,
-                        packet: null,
-                    })
+                    if (err) {
+                        err.reason = 'dbError'
+                        return next(err)
+                    }
+                    res.json(responseHandler(response, resCode.success, null))
                 })
             })
-            .catch(err => {
-                // console.error(err.message)
-                console.log(err)
-                res.json({
-                    result: false,
-                    code: 3,
-                    packet: null,
-                })
-            })
+            .catch(err => next(err))
     },
 
     signOut: io => {
         return (req, res, next) => {
-            redisClient.hget('onlineUsers', req.session.passport.user, (err, user) => {
-                // redisClient.hget('onlineUsers', req.params.id, (err, user) => {
-                console.log(err)
-                console.log(user)
+            redisClient.hget(dataMap.onlineUserHm, req.session.passport.user, (err, user) => {
                 if (err) {
-                    console.log('err err', err)
-                    return res.json({ response: err })
-                    // return next(err)
+                    err.reason = 'noInfo'
+                    return next(err)
                 }
-                if (!user) return res.json({ response: 'no user' })
+                // if (!user) return res.json({ response: 'no user' })
                 user = JSON.parse(user)
                 let socket = io.sockets.connected[user.socketId]
                 socket.disconnect()
                 // console.log('rooms', io.sockets.adapter.rooms)
+
                 // roomLeaveProcess(socket).then(() => {
                 //     redisClient.hdel('onlineUsers', user.id)
                 //     redisClient.hdel('sessionMap', req.session.id)

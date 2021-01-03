@@ -1,28 +1,18 @@
-////////////////// data map //////////////////
-
-// roomsUsers => redisClient.sadd('0',socket.userId)
-// onlineUsers => redisClient.hmset('onlineUsers', {[userId]: JSON.stringify(user)})
-// sessionMap => redisClient.hget('sessionMap', sessionId, (err, userId) => { })
-// socket.userId, socket.pos
-
-//////////////////////////////////////////////
-
 // const path = require('path'); // OS-independent
 const http = require('http');
 const express = require('express');
 const passport = require('passport');
 const passportConfig = require('./config/passportConfig');
 const webSettings = require('./config/webSettings')
+const errorHandler = require('./utils/errorHandler')
 const cors = require('cors');
 const app = express();
 
 app.use(express.json())
 app.set('port', process.env.PORT || 3000);
-// important: this [cors] must come before Router
-
 app.use(webSettings.sessionRedisMiddleware)
+// important: this [cors] must come before Router
 app.use(cors(webSettings.corsSettings));
-// app.use(cookieParser())
 app.use(passport.initialize());
 app.use(passport.session());
 passportConfig()
@@ -31,33 +21,38 @@ passportConfig()
 
 const server = http.createServer(app);
 const socketio = require('socket.io');
-const io = socketio.listen(server, {
-    cors: {
-        origin: true,
-        credentials: true,
-    }
-});
+const io = socketio.listen(server, webSettings.socketSettings);
 io.use((socket, next) => {
-    console.log('io middle=>socket.id: ', socket.id)
+    // console.log('io middle=>socket.id: ', socket.id)
     // this is just damn important!
     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
 })
-require('./controllers/socketio')(io)
+require('./controllers/socketioEntry')(io)
 
 
 app.use((req, res, next) => {
     let currTime = new Date();
     let timeStamp = currTime.getHours() + ':' + currTime.getMinutes();
-    console.log('Server Call : ', timeStamp)
-    // console.log(req.session.cookie)
-    console.log(req.isAuthenticated())
+    console.log('[HTTP CALL]: ', timeStamp)
     next()
 })
 app.use('/user', require('./routes/user')(io));
 
-// chat messages, log-in & out logs
-// friend list, group list, room list
-// person info (id,chat_room_id, room, group, level )
+// catch 404 and forward to error handler
+app.use(function (req, res, next) {
+    let err = new Error('Not Found');
+    err.reason = 'noPage'
+    err.status = 404;
+    next(err);
+});
+
+// error handler
+app.use(function (err, req, res, next) {
+    console.log('reached the end...404 or 500')
+    console.log(err)
+    console.log()
+    res.json(errorHandler(err))
+});
 
 server.listen(app.get('port'), () => {
     console.log('http://localhost:%d', app.get('port'));
