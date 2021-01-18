@@ -5,8 +5,7 @@ const sessionToSocket = require('../utils/sessionToSocket')
 const room = require('../controllers/roomController')
 const responseHandler = require('../utils/responseHandler')
 const errorHandler = require('../utils/errorHandler')
-const eventEmitter = require('../../config/eventEmitter')
-
+const eventEmitter = require('../config/eventEmitter')
 
 
 module.exports = io => {

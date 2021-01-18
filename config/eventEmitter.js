@@ -1,1 +1,1 @@
-module.exports = new require('events').EventEmitter
+module.exports = new (require('events')).EventEmitter()

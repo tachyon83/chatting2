@@ -171,6 +171,7 @@ module.exports = {
 
     list: () => {
         const roomInfoCollector = roomIds => {
+            console.log('roomIds', roomIds)
             if (!roomIds.length) return Promise.resolve([])
 
             const eachRoomHandler = roomId => new Promise((resolve, reject) => {
@@ -194,7 +195,6 @@ module.exports = {
 
         getRoomIds()
             .then(roomInfoCollector)
-            .then(result => { return Promise.resolve(result) })
             .catch(err => { return Promise.reject(err) })
     },
 
