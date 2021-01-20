@@ -21,7 +21,8 @@ passportConfig()
 
 const server = http.createServer(app);
 const socketio = require('socket.io');
-const io = socketio.listen(server, webSettings.socketSettings);
+// const io = socketio.listen(server, webSettings.socketSettings);
+const io = socketio(server, webSettings.socketSettings);
 io.use((socket, next) => {
     // console.log('io middle=>socket.id: ', socket.id)
     // this is just damn important!
@@ -31,6 +32,7 @@ require('./controllers/socketioEntry')(io)
 
 
 app.use((req, res, next) => {
+    console.log('req.sess', req.session.id)
     let currTime = new Date();
     let timeStamp = currTime.getHours() + ':' + currTime.getMinutes();
     console.log('[HTTP CALL]: ', timeStamp)

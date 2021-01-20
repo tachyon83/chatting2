@@ -74,6 +74,7 @@ module.exports = socket => {
     })
 
     socket.on('room.list', cb => {
+        console.log('room.list event!')
         room.list()
             .then(list => cb(responseHandler(true, resCode.success, list)))
             .catch(err => cb(errorHandler(err)))

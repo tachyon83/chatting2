@@ -37,6 +37,7 @@ module.exports = {
     },
 
     idCheck: (req, res, next) => {
+        console.log('idcheck')
         userDao.existById(req.params.id, (err, response) => {
             if (err) return next(err)
             res.json(responseHandler(!response, response ? resCode.exist : resCode.success, null))

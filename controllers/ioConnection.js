@@ -19,10 +19,22 @@ module.exports = io => {
     })
 
     io.on('connection', socket => {
+        console.log('conn')
+        console.log(socket.request.session.id)
+        console.log('socketId', socket.id)
+
         // 아래 과정에서 에러 발생시, 중단 처리 관련하여 고민 필요
         sessionToSocket(socket.request.session.id, socket)
             .then(() => room.join(socket, dataMap.lobby))
             .catch(err => socket.emit('system.error', errorHandler(err)))
+
+        socket.on('abc', () => {
+            console.log('abc test !')
+        })
+
+        socket.on('disconnect', reason => {
+            console.log(reason)
+        })
 
 
         socket.on('disconnecting', reason => {

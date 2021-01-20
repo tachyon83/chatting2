@@ -193,7 +193,7 @@ module.exports = {
             })
         }
 
-        getRoomIds()
+        return getRoomIds()
             .then(roomInfoCollector)
             .catch(err => { return Promise.reject(err) })
     },
