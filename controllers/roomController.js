@@ -32,92 +32,99 @@ module.exports = {
     join: (socket, roomId) => {
         // if (!isJoinableResult) return Promise.resolve(false)
         return new Promise((resolve, reject) => {
-            socket.join(roomId, () => {
-                redisClient.sadd(roomId, socket.userId)
-                socket.pos = roomId
+            console.log('socket.pos before joining', socket.pos)
+            console.log(socket._events)
+            console.log(socket.join)
+            // socket.join(roomId, err => {
+            socket.join(roomId)
+            console.log('inside socket.join')
+            redisClient.sadd(roomId, socket.userId)
+            socket.pos = roomId
+            console.log('socket.pos after joining', socket.pos)
 
-                redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
-                    if (err) {
-                        err.reason = 'noInfo'
-                        return reject(err)
-                    }
-                    user = JSON.parse(user)
-                    user.pos = roomId
-                    redisClient.hmset(dataMap.onlineUserHm, {
-                        [socket.userId]: JSON.stringify(user)
-                    })
-
-                    if (roomId !== dataMap.lobby) {
-                        redisClient.hget(dataMap.roomInfoHm, roomId, (err, room) => {
-                            if (err) {
-                                err.reason = 'noInfo'
-                                return reject(err)
-                            }
-                            room = JSON.parse(room)
-                            room.roomCnt++
-                            redisClient.hmset(dataMap.roomInfoHm, {
-                                [roomId]: JSON.stringify(room)
-                            })
-                            eventEmitter.emit('room.list.refresh', room)
-
-                            socket.to(socket.pos).emit('chat.in', chatDto(null, null, '[Welcome]: ' + socket.userId + ' joined', 'all'))
-                            resolve(true)
-                        })
-                    } else resolve(true)
+            redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
+                if (err) {
+                    err.reason = 'noInfo'
+                    return reject(err)
+                }
+                user = JSON.parse(user)
+                user.pos = roomId
+                redisClient.hmset(dataMap.onlineUserHm, {
+                    [socket.userId]: JSON.stringify(user)
                 })
+
+                if (roomId !== dataMap.lobby) {
+                    redisClient.hget(dataMap.roomInfoHm, roomId, (err, room) => {
+                        if (err) {
+                            err.reason = 'noInfo'
+                            return reject(err)
+                        }
+                        room = JSON.parse(room)
+                        room.roomCnt++
+                        redisClient.hmset(dataMap.roomInfoHm, {
+                            [roomId]: JSON.stringify(room)
+                        })
+                        eventEmitter.emit('room.list.refresh', room)
+
+                        socket.to(socket.pos).emit('chat.in', chatDto(null, null, '[Welcome]: ' + socket.userId + ' joined', 'all'))
+                        resolve(true)
+                    })
+                } else resolve(true)
             })
         })
     },
 
     leave: socket => {
+        console.log('leave in room Controller')
         return new Promise((resolve, reject) => {
-            socket.leave(socket.pos, () => {
-                redisClient.srem(socket.pos, socket.userId)
-                if (socket.pos === dataMap.lobby) return Promise.resolve(true)
+            console.log('socket.pos', socket.pos)
+            console.log('socket.userId', socket.userId)
+            socket.leave(socket.pos)
+            redisClient.srem(socket.pos, socket.userId)
+            if (socket.pos === dataMap.lobby) return resolve(true)
 
-                redisClient.scard(socket.pos, (err, cnt) => {
-                    if (err) return reject(err)
-                    socket.to(socket.pos).emit('chat.in', chatDto(null, null, '[Farewell]: ' + socket.userId + ' left', 'all'))
-                    if (cnt === 0) {
-                        // delete chatLogs in redis
-                        redisClient.del(socket.pos + 'chat')
-                        // delete chatLogs in MySQL
-                        // dao.delete(socket.pos+'chat')
+            redisClient.scard(socket.pos, (err, cnt) => {
+                if (err) return reject(err)
+                socket.to(socket.pos).emit('chat.in', chatDto(null, null, '[Farewell]: ' + socket.userId + ' left', 'all'))
+                if (cnt === 0) {
+                    // delete chatLogs in redis
+                    redisClient.del(socket.pos + 'chat')
+                    // delete chatLogs in MySQL
+                    // dao.delete(socket.pos+'chat')
 
-                        redisClient.hdel(dataMap.roomInfoHm, socket.pos)
-                        eventEmitter.emit('room.list.refresh', {
-                            roomId: socket.pos,
-                            roomClosed: true,
-                        })
-                        return resolve(true)
+                    redisClient.hdel(dataMap.roomInfoHm, socket.pos)
+                    eventEmitter.emit('room.list.refresh', {
+                        roomId: socket.pos,
+                        roomClosed: true,
+                    })
+                    return resolve(true)
+                }
+
+                redisClient.hget(dataMap.roomInfoHm, socket.pos, (err, room) => {
+                    if (err) {
+                        err.reason = 'noInfo'
+                        return reject(err)
                     }
 
-                    redisClient.hget(dataMap.roomInfoHm, socket.pos, (err, room) => {
-                        if (err) {
-                            err.reason = 'noInfo'
-                            return reject(err)
-                        }
+                    room = JSON.parse(room)
+                    room.roomCnt--
+                    if (room.roomOwner === socket.userId) {
+                        redisClient.srandmember(socket.pos, (err, userId) => {
+                            if (err) return reject(err)
+                            room.roomOwner = userId
 
-                        room = JSON.parse(room)
-                        room.roomCnt--
-                        if (room.roomOwner === socket.userId) {
-                            redisClient.srandmember(socket.pos, (err, userId) => {
-                                if (err) return reject(err)
-                                room.roomOwner = userId
-
-                                redisClient.hmset(dataMap.roomInfoHm, {
-                                    [socket.pos]: JSON.stringify(room)
-                                })
-                                eventEmitter.emit('room.list.refresh', room)
-                                return resolve(true)
+                            redisClient.hmset(dataMap.roomInfoHm, {
+                                [socket.pos]: JSON.stringify(room)
                             })
-                        }
-                        redisClient.hmset(dataMap.roomInfoHm, {
-                            [socket.pos]: JSON.stringify(room)
+                            eventEmitter.emit('room.list.refresh', room)
+                            return resolve(true)
                         })
-                        eventEmitter.emit('room.list.refresh', room)
-                        resolve(true)
+                    }
+                    redisClient.hmset(dataMap.roomInfoHm, {
+                        [socket.pos]: JSON.stringify(room)
                     })
+                    eventEmitter.emit('room.list.refresh', room)
+                    resolve(true)
                 })
             })
         })

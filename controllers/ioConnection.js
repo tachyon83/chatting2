@@ -25,17 +25,18 @@ module.exports = io => {
 
         // 아래 과정에서 에러 발생시, 중단 처리 관련하여 고민 필요
         sessionToSocket(socket.request.session.id, socket)
-            .then(() => room.join(socket, dataMap.lobby))
-            .catch(err => socket.emit('system.error', errorHandler(err)))
+            .then(() => {
+                console.log('about to join')
+                room.join(socket, dataMap.lobby)
+            })
+            .catch(err => {
+                console.log(err)
+                socket.emit('system.error', errorHandler(err))
+            })
 
         socket.on('abc', () => {
             console.log('abc test !')
         })
-
-        socket.on('disconnect', reason => {
-            console.log(reason)
-        })
-
 
         socket.on('disconnecting', reason => {
             // 방을 나가고 (0번방에서도 나가기)
@@ -45,16 +46,19 @@ module.exports = io => {
             console.log('disconnecting reason', reason);
 
             if (reason === 'server namespace disconnect' || reason === 'transport close') {
-                room.leave(socket).then(() => {
-                    redisClient.hdel(dataMap.onlineUserHm, socket.userId)
-                    redisClient.hdel(dataMap.sessionUserMap, socket.request.session.id)
+                room.leave(socket)
+                    .then(() => {
+                        console.log('room left')
+                        redisClient.hdel(dataMap.onlineUserHm, socket.userId)
+                        redisClient.hdel(dataMap.sessionUserMap, socket.request.session.id)
 
-                    socket.request.logOut()
-                    socket.request.session.destroy(err => {
-                        if (err) return socket.emit('system.error', errorHandler(err))
-                        console.log(socket.userId + ' has successfully signed out/disconnected.')
+                        socket.request.logOut()
+                        socket.request.session.destroy(err => {
+                            if (err) return socket.emit('system.error', errorHandler(err))
+                            console.log(socket.userId + ' has successfully signed out/disconnected.')
+                        })
                     })
-                })
+                    .catch(err => console.log(err))
             }
         })
 
