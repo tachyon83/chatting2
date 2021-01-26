@@ -134,7 +134,9 @@ module.exports = {
         return new Promise((resolve, reject) => {
             redisClient.get(dataMap.nextRoomId, (err, nextRoomId) => {
                 if (err) return reject(err)
-                redisClient.set(dataMap.nextRoomId, toString(parseInt(nextRoomId) + 1))
+                console.log('nextRoomId before', nextRoomId)
+                console.log('nextRoomId after', (parseInt(nextRoomId) + 1).toString())
+                redisClient.set(dataMap.nextRoomId, (parseInt(nextRoomId) + 1).toString())
 
                 roomDto.roomId = nextRoomId
                 roomDto.roomCnt = 0

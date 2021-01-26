@@ -56,7 +56,7 @@ module.exports = socket => {
                                         else cb(responseHandler(joinResult, resCode.error, null))
                                     })
                             }
-                            else cb(responseHandler(createResult, resCode.error, null))
+                            else cb(responseHandler(leaveResult, resCode.error, null))
                         })
                 }
                 else cb(responseHandler(leaveResult, resCode.error, null))

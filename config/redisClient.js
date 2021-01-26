@@ -1,6 +1,6 @@
 // connect-redis version must be somewhere around 3.#.#
 // now upgraded to 5.0.0
-// const redis = require('redis')
+const dataMap = require('../config/dataMap')
 const redis = require('redis')
 const redisSetting = require('./redisSetting')
 const redisClient = redis.createClient(process.env.REDIS_URL || { port: redisSetting.port, host: redisSetting.host })
@@ -20,7 +20,6 @@ redisClient.on('error', function (err) {
     console.log('Redis error: ' + err)
 })
 
-const dataMap = require('../config/dataMap')
 redisClient.set(dataMap.nextRoomId, '1')
 
 module.exports = redisClient
