@@ -9,6 +9,7 @@ const eventEmitter = require('../config/eventEmitter')
 module.exports = {
 
     isJoinable: roomId => {
+        console.log('roomId in isJoinable', roomId)
         // just check if joinable, nothing else
         if (roomId === dataMap.lobby) return Promise.resolve(true)
 
@@ -19,8 +20,15 @@ module.exports = {
                     return reject(err)
                 }
                 room = JSON.parse(room)
-                if (room.roomCnt < room.capacity) resolve(true)
-                else {
+                console.log('roomInfo in isJoinable', room)
+                console.log(room.roomCnt)
+                console.log(room.capacity)
+                console.log(room.roomCnt < room.roomCapacity)
+                if (room.roomCnt < room.roomCapacity) {
+                    console.log('joinable!')
+                    resolve(true)
+                } else {
+                    console.log('room full')
                     err = new Error()
                     err.reason = 'noSpace'
                     reject(err)
