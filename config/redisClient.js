@@ -20,6 +20,9 @@ redisClient.on('error', function (err) {
     console.log('Redis error: ' + err)
 })
 
-redisClient.set(dataMap.nextRoomId, '1')
+redisClient.get(dataMap.nextRoomId, (err, id) => {
+    if (err) console.log(err)
+    else if (!id) redisClient.set(dataMap.nextRoomId, '1')
+})
 
 module.exports = redisClient

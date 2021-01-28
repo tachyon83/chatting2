@@ -52,7 +52,7 @@ module.exports = socket => {
                             if (nextRoomId) {
                                 room.join(socket, nextRoomId)
                                     .then(joinResult => {
-                                        if (joinResult) cb(responseHandler(joinResult, resCode.success, null))
+                                        if (joinResult) cb(responseHandler(joinResult, resCode.success, nextRoomId))
                                         else cb(responseHandler(joinResult, resCode.error, null))
                                     })
                             }
