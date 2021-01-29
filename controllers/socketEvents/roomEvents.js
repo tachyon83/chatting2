@@ -15,14 +15,14 @@ module.exports = room => {
         room.leave()
             .then(_ => room.isJoinable(roomId))
             .then(_ => room.join(roomId))
-            .then(cb(responseHandler(true, resCode.success, null)))
+            .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
     })
 
     room.socket.on('room.leave', cb => {
         room.leave()
             .then(_ => room.join(dataMap.lobby))
-            .then(cb(responseHandler(true, resCode.success, null)))
+            .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
     })
 
@@ -31,14 +31,14 @@ module.exports = room => {
             .then(_ => room.create(roomDto))
             .then(nextRoomId => {
                 room.join(nextRoomId)
-                    .then(cb(responseHandler(true, resCode.success, nextRoomId)))
+                    .then(_ => cb(responseHandler(true, resCode.success, nextRoomId)))
             })
             .catch(err => cb(errorHandler(err)))
     })
 
     room.socket.on('room.update', (roomDto, cb) => {
         room.update(roomDto)
-            .then(cb(responseHandler(true, resCode.success, null)))
+            .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
     })
 
