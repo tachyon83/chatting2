@@ -2,7 +2,7 @@ const redisClient = require('../config/redisClient');
 const dataMap = require('../config/dataMap')
 const resCode = require('../config/resCode')
 const sessionToSocket = require('../utils/sessionToSocket')
-const room = require('../controllers/roomController')
+const roomController = require('../controllers/roomController')
 const responseHandler = require('../utils/responseHandler')
 const errorHandler = require('../utils/errorHandler')
 const eventEmitter = require('../config/eventEmitter')
@@ -23,11 +23,13 @@ module.exports = io => {
         console.log(socket.request.session.id)
         console.log('socketId', socket.id)
 
+        const room = new roomController(socket)
+
         // 아래 과정에서 에러 발생시, 중단 처리 관련하여 고민 필요
         sessionToSocket(socket.request.session.id, socket)
             .then(() => {
                 console.log('about to join')
-                room.join(socket, dataMap.lobby)
+                room.join(dataMap.lobby)
             })
             .catch(err => {
                 console.log(err)
@@ -46,7 +48,7 @@ module.exports = io => {
             console.log('disconnecting reason', reason);
 
             if (reason === 'server namespace disconnect' || reason === 'transport close') {
-                room.leave(socket)
+                room.leave()
                     .then(() => {
                         console.log('room left')
                         redisClient.hdel(dataMap.onlineUserHm, socket.userId)
@@ -62,7 +64,7 @@ module.exports = io => {
             }
         })
 
-        require('./socketEvents/roomEvents')(socket)
+        require('./socketEvents/roomEvents')(room)
         require('./socketEvents/chatEvents')(socket)
         require('./socketEvents/userEvents')(socket)
 
