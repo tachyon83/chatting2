@@ -17,7 +17,8 @@ const redisClient = redis.createClient(process.env.REDIS_URL || { port: redisSet
 //     if (err) throw err
 // })
 redisClient.on('error', function (err) {
-    console.log('Redis error: ' + err)
+    console.log('[REDIS]: Error Occurred:' + err)
+    console.log()
 })
 
 redisClient.get(dataMap.nextRoomId, (err, id) => {

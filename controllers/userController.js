@@ -24,20 +24,22 @@ module.exports = {
                     redisClient.hmset(dataMap.onlineUserHm, {
                         [member.id]: JSON.stringify(member),
                     })
-                    console.log('login successful')
+                    console.log('[USER]: Login Successful')
+                    console.log()
                     res.json(responseHandler(true, resCode.success, member.id))
                 })
 
             } else {
-                // console.log(req.flash('error'))
-                console.log('login failed')
+                console.log('[USER]: Login Failed')
+                console.log()
                 res.json(responseHandler(false, resCode.wrong, null))
             }
         })(req, res, next)
     },
 
     idCheck: (req, res, next) => {
-        console.log('idcheck')
+        console.log('[USER]: IdCheck')
+        console.log()
         userDao.existById(req.params.id, (err, response) => {
             if (err) return next(err)
             res.json(responseHandler(!response, response ? resCode.exist : resCode.success, null))
@@ -59,6 +61,8 @@ module.exports = {
                         err.reason = 'dbError'
                         return next(err)
                     }
+                    console.log('[USER]: A New User Successfully Created')
+                    console.log()
                     res.json(responseHandler(response, resCode.success, null))
                 })
             })
@@ -72,25 +76,9 @@ module.exports = {
                     err.reason = 'noInfo'
                     return next(err)
                 }
-                // if (!user) return res.json({ response: 'no user' })
                 user = JSON.parse(user)
                 let socket = io.sockets.connected[user.socketId]
                 socket.disconnect()
-                // console.log('rooms', io.sockets.adapter.rooms)
-
-                // roomLeaveProcess(socket).then(() => {
-                //     redisClient.hdel('onlineUsers', user.id)
-                //     redisClient.hdel('sessionMap', req.session.id)
-                //     socket.disconnect()
-                //     req.logOut()
-                //     req.session.destroy(err => {
-                //         if (err) return next(err)
-                //         res.status(200).clearCookie('connect.sid').json({
-                //             result: true
-                //         })
-                //         console.log('signed out')
-                //     })
-                // })
             })
         }
     }

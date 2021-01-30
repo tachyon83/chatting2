@@ -6,7 +6,8 @@ module.exports = io => {
     io.use((socket, next) => {
         let currTime = new Date();
         let timeStamp = currTime.getHours() + ':' + currTime.getMinutes();
-        console.log('[IO EVENT]: ', timeStamp)
+        console.log('[IO Entry]: ', timeStamp)
+        console.log()
 
         redisClient.get('sess:' + socket.request.session.id, (err, value) => {
             if (err) {

@@ -11,7 +11,6 @@ module.exports = room => {
     // const room = new roomController(socket)
 
     room.socket.on('room.join', (roomId, cb) => {
-        console.log('roomId in roomEvents', roomId)
         room.leave()
             .then(_ => room.isJoinable(roomId))
             .then(_ => room.join(roomId))
@@ -36,6 +35,12 @@ module.exports = room => {
             .catch(err => cb(errorHandler(err)))
     })
 
+    room.socket.on('room.info', cb => {
+        room.info()
+            .then(info => cb(responseHandler(true, resCode.success, info)))
+            .catch(err => cb(errorHandler(err)))
+    })
+
     room.socket.on('room.update', (roomDto, cb) => {
         room.update(roomDto)
             .then(_ => cb(responseHandler(true, resCode.success, null)))
@@ -43,7 +48,6 @@ module.exports = room => {
     })
 
     room.socket.on('room.list', cb => {
-        console.log('room.list event!')
         room.list()
             .then(list => cb(responseHandler(true, resCode.success, list)))
             .catch(err => cb(errorHandler(err)))

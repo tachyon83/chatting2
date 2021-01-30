@@ -21,13 +21,14 @@ module.exports = () => {
 
     passport.serializeUser((user, done) => {
         // when done, req.session.passport.user에 저장!
-        console.log('now serialized')
-        if (user) done(null, user.id);
-        // return done(null, null)
+        console.log('[PASSPORT]: Now Serialized')
+        console.log()
+        if (user) return done(null, user.id);
+        return done(null, null)
     })
     passport.deserializeUser((id, done) => {
-        // at first req.session.passport is not defined
-        // throught this 'deserialize' process, passport is attached
+        // at first, req.session.passport is not defined
+        // through this 'deserialize' process, passport is attached
 
         // console.log('session', req.session) <-undefined maybe
         // console.log('deserialize called and req.user is registered')

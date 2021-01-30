@@ -6,7 +6,7 @@ class Dao {
     constructor() {
         dbCreate().then(pool => {
             this.dbpool = pool
-            console.log('Dao class instance and its dbPool created...')
+            console.log('[DAO]: Dao class instance and its dbPool created...')
         })
         // this.usedIds=[]
     }
@@ -30,6 +30,8 @@ class Dao {
                         return;
                     }
                     // console.log('db process result', rows)
+                    console.log('[DAO]: A Query Processed...')
+                    console.log()
                     resolve(rows)
                 })
             })

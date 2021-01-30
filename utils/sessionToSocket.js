@@ -3,7 +3,7 @@ const dataMap = require('../config/dataMap')
 
 module.exports = (sessionId, socket) => {
     return new Promise((resolve, reject) => {
-        console.log('inside sessionToSocket')
+
         redisClient.hget(dataMap.sessionUserMap, sessionId, (err, userId) => {
             if (err) return reject(err)
             socket.userId = userId
@@ -14,7 +14,8 @@ module.exports = (sessionId, socket) => {
                 redisClient.hmset(dataMap.onlineUserHm, {
                     [userId]: JSON.stringify(user)
                 })
-                console.log('well done in sessionToSocket')
+                console.log('[SessionToSocket]: Work Complete.')
+                console.log()
                 resolve()
             })
         })
