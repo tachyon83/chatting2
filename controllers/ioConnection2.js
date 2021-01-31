@@ -2,7 +2,7 @@ const redisClient = require('../config/redisClient');
 const dataMap = require('../config/dataMap')
 const resCode = require('../config/resCode')
 const sessionToSocket = require('../utils/sessionToSocket')
-const roomController = require('../controllers/roomController')
+const room = require('../controllers/roomController2')
 const responseHandler = require('../utils/responseHandler')
 const errorHandler = require('../utils/errorHandler')
 const eventEmitter = require('../config/eventEmitter')
@@ -24,14 +24,14 @@ module.exports = io => {
 
     io.on('connection', async socket => {
 
-        const room = new roomController(io, socket)
+        // const room = new roomController(io, socket)
 
         eventEmitter.on('room.list.refresh', roomDto => {
             // console.log('io.adap.rooms', io.adapter.rooms)
             // console.log('io.nsps.adap.rooms', io.nsps['/'].adapter.rooms)
-            console.log('io.sockets', Object.keys(io.sockets))
-            console.log('io.sockets._events', Object.keys(io.sockets._events))
-            console.log('io.sockets.sockets', Object.keys(io.sockets.sockets))
+            // console.log('io.sockets', Object.keys(io.sockets))
+            // console.log('io.sockets._events', Object.keys(io.sockets._events))
+            // console.log('io.sockets.sockets', Object.keys(io.sockets.sockets))
             // console.log('io.sockets.connected', Object.keys(io.sockets.connected))
             console.log('io.sockets.adapter', Object.keys(io.sockets.adapter))
             console.log('io.sockets.adapter.rooms', Object.keys(io.sockets.adapter.rooms))
@@ -45,18 +45,21 @@ module.exports = io => {
         console.log()
 
         // 아래 과정에서 에러 발생시, 중단 처리 관련하여 고민 필요
-        sessionToSocket(socket.request.session.id, socket)
-            .then(() => {
-                console.log('[IO]: Now Joining Lobby...')
-                console.log()
-                room.join(dataMap.lobby)
-            })
+        await sessionToSocket(socket.request.session.id, socket)
+            // .then(() => {
+            //     console.log('[IO]: Now Joining Lobby...')
+            //     console.log()
+            //     room.join(socket,dataMap.lobby)
+            // })
             .catch(err => {
                 console.log(err)
                 console.log()
                 socket.emit('system.error', errorHandler(err))
                 // need to disconnect this socket?
             })
+        console.log('[IO]: Now Joining Lobby...')
+        console.log()
+        await room.join(socket, dataMap.lobby)
 
         socket.on('abc', () => {
             console.log('abc test !')
@@ -71,7 +74,7 @@ module.exports = io => {
             console.log()
 
             if (reason === 'server namespace disconnect' || reason === 'transport close') {
-                room.leave()
+                room.leave(socket)
                     .then(() => {
                         console.log('[IO]: This Socket Left a Room or Lobby')
                         console.log()
@@ -89,7 +92,7 @@ module.exports = io => {
             }
         })
 
-        require('./socketEvents/roomEvents')(room)
+        require('./socketEvents/roomEvents2')(socket)
         require('./socketEvents/chatEvents')(socket)
         require('./socketEvents/userEvents')(socket)
 

@@ -14,7 +14,7 @@ module.exports = (sessionId, socket) => {
                 redisClient.hmset(dataMap.onlineUserHm, {
                     [userId]: JSON.stringify(user)
                 })
-                console.log('[SessionToSocket]: Work Complete.')
+                console.log('[SessionToSocket]: Complete.')
                 console.log()
                 resolve()
             })
