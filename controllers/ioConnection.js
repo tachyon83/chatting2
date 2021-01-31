@@ -14,30 +14,31 @@ module.exports = io => {
     // console.log(io.sockets.adapter.rooms['0'].sockets)
     // console.log(Object.keys(io.sockets.adapter.rooms['0'].sockets))
 
-    // eventEmitter.on('room.list.refresh', roomDto => {
-    //     console.log('io.sockets', Object.keys(io.sockets))
-    //     console.log('io.sockets.adapter', Object.keys(io.sockets.adapter))
-    //     console.log('io.sockets.adapter.rooms', Object.keys(io.sockets.adapter.rooms))
-    //     // console.log(io.sockets.adapter.rooms['0'].sockets)
-    //     io.in(dataMap.lobby).emit('room.list.refresh', responseHandler(true, resCode.success, roomDto))
-    // })
+    eventEmitter.on('room.list.refresh', roomDto => {
+        console.log('io.sockets', Object.keys(io.sockets))
+        console.log('io.sockets.adapter', Object.keys(io.sockets.adapter))
+        console.log('io.sockets.adapter.rooms', io.sockets.adapter.rooms)
+        // console.log(io.sockets.adapter.rooms['0'].sockets)
+        io.in(dataMap.lobby).emit('room.list.refresh', responseHandler(true, resCode.success, roomDto))
+        // io.sockets.in(dataMap.lobby).emit('room.list.refresh', responseHandler(true, resCode.success, roomDto))
+    })
 
     io.on('connection', async socket => {
 
-        const room = new roomController(io, socket)
+        const room = new roomController(socket)
 
-        eventEmitter.on('room.list.refresh', roomDto => {
-            // console.log('io.adap.rooms', io.adapter.rooms)
-            // console.log('io.nsps.adap.rooms', io.nsps['/'].adapter.rooms)
-            console.log('io.sockets', Object.keys(io.sockets))
-            console.log('io.sockets._events', Object.keys(io.sockets._events))
-            console.log('io.sockets.sockets', Object.keys(io.sockets.sockets))
-            // console.log('io.sockets.connected', Object.keys(io.sockets.connected))
-            console.log('io.sockets.adapter', Object.keys(io.sockets.adapter))
-            console.log('io.sockets.adapter.rooms', Object.keys(io.sockets.adapter.rooms))
-            // console.log(io.sockets.adapter.rooms['0'].sockets)
-            io.in(dataMap.lobby).emit('room.list.refresh', responseHandler(true, resCode.success, roomDto))
-        })
+        // eventEmitter.on('room.list.refresh', roomDto => {
+        //     // console.log('io.adap.rooms', io.adapter.rooms)
+        //     // console.log('io.nsps.adap.rooms', io.nsps['/'].adapter.rooms)
+        //     console.log('io.sockets', Object.keys(io.sockets))
+        //     console.log('io.sockets._events', Object.keys(io.sockets._events))
+        //     console.log('io.sockets.sockets', Object.keys(io.sockets.sockets))
+        //     // console.log('io.sockets.connected', Object.keys(io.sockets.connected))
+        //     console.log('io.sockets.adapter', Object.keys(io.sockets.adapter))
+        //     console.log('io.sockets.adapter.rooms', Object.keys(io.sockets.adapter.rooms))
+        //     // console.log(io.sockets.adapter.rooms['0'].sockets)
+        //     io.in(dataMap.lobby).emit('room.list.refresh', responseHandler(true, resCode.success, roomDto))
+        // })
 
         console.log('[IO]: A New Socket Connected!')
         console.log('[IO]: Session ID in this Socket:', socket.request.session.id)

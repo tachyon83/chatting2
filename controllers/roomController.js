@@ -11,8 +11,7 @@ const chatDto = require('../models/chatDto')
 const eventEmitter = require('../config/eventEmitter')
 
 module.exports = class RoomController {
-    constructor(io, socket) {
-        this.io = io
+    constructor(socket) {
         this.socket = socket
     }
 
