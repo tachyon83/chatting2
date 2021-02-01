@@ -195,7 +195,7 @@ module.exports = class RoomController {
                 roomInfo = JSON.parse(roomInfo)
 
                 roomInfo.roomPw = roomDto.roomPw
-                roomInfo.Title = roomDto.roomTitle
+                roomInfo.roomTitle = roomDto.roomTitle
                 roomInfo.roomCapacity = roomDto.roomCapacity
 
                 redisClient.hmset(dataMap.roomInfoHm, {
