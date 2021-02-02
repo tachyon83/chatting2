@@ -10,10 +10,13 @@ const dataMap = require('../../config/dataMap')
 module.exports = room => {
     // const room = new roomController(socket)
 
-    room.socket.on('room.join', (roomId, cb) => {
+    room.socket.on('room.join', (roomDto, cb) => {
         room.leave()
-            .then(_ => room.isJoinable(roomId))
-            .then(_ => room.join(roomId))
+            .then(_ => room.isJoinable(roomDto))
+            .then(joinable => {
+                if (!joinable) return cb(responseHandler(false, resCode.wrong, null))
+                room.join(roomDto.roomId)
+            })
             .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
     })

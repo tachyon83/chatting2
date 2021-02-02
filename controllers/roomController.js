@@ -15,19 +15,19 @@ module.exports = class RoomController {
         this.socket = socket
     }
 
-    isJoinable = roomId => {
+    isJoinable = roomDto => {
         // just check if joinable, nothing else
-        if (roomId === dataMap.lobby) return Promise.resolve(true)
+        if (roomDto.roomId === dataMap.lobby) return Promise.resolve(true)
 
         return new Promise((resolve, reject) => {
-            redisClient.hget(dataMap.roomInfoHm, roomId, (err, roomInfo) => {
+            redisClient.hget(dataMap.roomInfoHm, roomDto.roomId, (err, roomInfo) => {
                 if (err) {
                     err.reason = 'noInfo'
                     return reject(err)
                 }
                 roomInfo = JSON.parse(roomInfo)
                 if (roomInfo.roomCnt < roomInfo.roomCapacity) {
-                    // roomPw ...
+                    if (roomInfo.roomPw !== roomDto.roomPw) return resolve(false)
                     console.log(`[Room]: Room ID(${roomId}) is Joinable`)
                     console.log()
                     resolve(true)
@@ -43,13 +43,12 @@ module.exports = class RoomController {
     }
 
     join = roomId => {
-        // if (!isJoinableResult) return Promise.resolve(false)
-        return new Promise((resolve, reject) => {
-            // console.log(this.socket._events)
+        // roomInfoHm does not contain '0' because the room list comes from roomInfoHm
+        // the lobby is separated.
 
-            this.socket.join(roomId)
-            redisClient.sadd(roomId, this.socket.userId)
-            this.socket.pos = roomId
+        // if (!isJoinableResult) return Promise.resolve(false)
+        return new Promise(async (resolve, reject) => {
+            // console.log(this.socket._events)
 
             redisClient.hget(dataMap.onlineUserHm, this.socket.userId, (err, user) => {
                 if (err) {
@@ -62,8 +61,16 @@ module.exports = class RoomController {
                     [this.socket.userId]: JSON.stringify(user)
                 })
 
-                if (roomId === dataMap.lobby) return resolve(true)
+                this.socket.join(roomId)
+                redisClient.sadd(roomId, this.socket.userId)
+                this.socket.pos = roomId
 
+
+                if (roomId === dataMap.lobby) {
+                    console.log(`[Lobby]: ${this.socket.userId} joined the lobby.`)
+                    console.log()
+                    return resolve(true)
+                }
                 redisClient.hget(dataMap.roomInfoHm, roomId, (err, roomInfo) => {
                     if (err) {
                         err.reason = 'noInfo'
@@ -75,10 +82,10 @@ module.exports = class RoomController {
                     redisClient.hmset(dataMap.roomInfoHm, {
                         [roomId]: JSON.stringify(roomInfo)
                     })
-                    eventEmitter.emit('room.list.refresh', roomInfo)
 
                     console.log(`[Room]: ${this.socket.userId} joined a Room with ID(${roomId}).`)
                     console.log()
+                    eventEmitter.emit('room.list.refresh', roomInfo)
 
                     this.socket.to(this.socket.pos).emit('chat.in', chatDto(null, null, '[Welcome]: ' + this.socket.userId + ' joined', 'all'))
                     resolve(true)
