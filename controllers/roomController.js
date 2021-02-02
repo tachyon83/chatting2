@@ -28,7 +28,7 @@ module.exports = class RoomController {
                 roomInfo = JSON.parse(roomInfo)
                 if (roomInfo.roomCnt < roomInfo.roomCapacity) {
                     if (roomInfo.roomPw !== roomDto.roomPw) return resolve(false)
-                    console.log(`[Room]: Room ID(${roomId}) is Joinable`)
+                    console.log(`[Room]: Room ID(${roomDto.roomId}) is Joinable`)
                     console.log()
                     resolve(true)
                 } else {
