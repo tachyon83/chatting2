@@ -8,5 +8,6 @@ module.exports = function (io) {
     router.get('/idcheck/:id', controller.idCheck)
     router.post('/signup', controller.signUp)
     router.get('/signout', httpAuth, controller.signOut(io))
+
     return router
 }

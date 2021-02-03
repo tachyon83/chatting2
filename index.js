@@ -1,8 +1,11 @@
 // const path = require('path'); // OS-independent
 const http = require('http');
 const express = require('express');
+// const session = require('express-session');
+// const cookieParser = require('cookie-parser')
 const passport = require('passport');
 const passportConfig = require('./config/passportConfig');
+// const webSettings = require('./config/webSettings')(session)
 const webSettings = require('./config/webSettings')
 const errorHandler = require('./utils/errorHandler')
 const cors = require('cors');
@@ -11,10 +14,13 @@ const app = express();
 app.use(express.json())
 app.set('port', process.env.PORT || 3000);
 app.use(webSettings.sessionRedisMiddleware)
+// app.use(session(webSettings.sessionRedisSettings))
+// app.use(cookieParser()) // cookieParser adds cookies to req.
 // important: this [cors] must come before Router
-app.use(cors(webSettings.corsSettings));
 app.use(passport.initialize());
 app.use(passport.session());
+// cors called after session and passport
+app.use(cors(webSettings.corsSettings));
 passportConfig()
 
 const server = http.createServer(app);
@@ -34,6 +40,8 @@ app.use((req, res, next) => {
     let currTime = new Date();
     let timeStamp = currTime.getHours() + ':' + currTime.getMinutes();
     console.log('[HTTP CALL]: ', timeStamp)
+    console.log('req.cookies', req.cookies)
+    console.log(req.headers.cookie)
     next()
 })
 app.use('/user', require('./routes/user')(io));

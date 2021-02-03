@@ -8,5 +8,5 @@ module.exports = (req, res, next) => {
         console.log()
         next()
     }
-    res.json(responseHandler(false, resCode.notAuth, null))
+    else res.json(responseHandler(false, resCode.notAuth, null))
 }
