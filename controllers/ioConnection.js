@@ -15,8 +15,8 @@ module.exports = io => {
     // console.log(Object.keys(io.sockets.adapter.rooms['0'].sockets))
 
     eventEmitter.on('room.list.refresh', roomDto => {
-        console.log('io.sockets', Object.keys(io.sockets))
-        console.log('io.sockets.adapter', Object.keys(io.sockets.adapter))
+        // console.log('io.sockets', Object.keys(io.sockets))
+        // console.log('io.sockets.adapter', Object.keys(io.sockets.adapter))
         console.log('io.sockets.adapter.rooms', io.sockets.adapter.rooms)
         // console.log(io.sockets.adapter.rooms['0'].sockets)
         io.in(dataMap.lobby).emit('room.list.refresh', responseHandler(true, resCode.success, roomDto))
