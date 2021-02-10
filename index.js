@@ -57,6 +57,7 @@ app.use(function (req, res, next) {
 // error handler
 app.use(function (err, req, res, next) {
     console.log('reached the end...404 or 500')
+    console.log('check cors, path, method...etc')
     console.log(err)
     console.log()
     res.json(errorHandler(err))

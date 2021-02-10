@@ -18,7 +18,7 @@ module.exports = {
 // set / get nextRoomId
 
 // hmset, hget, hdel, hkeys
-// sadd, srem, scard, smembers, srandmember, spop
+// sadd, sismember, srem, scard, smembers, srandmember, spop
 // push, lpush, lpop, rpush, rpop, llen, lrange 0 -1, lrange 0 2 (3 of them)
 // stack by rpush, read by rpop, save in db by lrange
 
