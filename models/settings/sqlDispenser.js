@@ -26,6 +26,19 @@ let sql_createTable_user =
         password varchar(150) not null,
         nick varchar(50) not null,
         img varchar(500),
+        groupId varchar(36) unique,
+        primary key(id),
+        foreign key(groupId) 
+        references ${dbSetting.table_group}(id) 
+        on update cascade 
+        on delete cascade
+    );`
+
+let sql_createTable_group =
+    `create table if not exists 
+    ${dbSetting.table_group}(
+        id varchar(36) not null unique,
+        cnt int not null default 1,
         primary key(id)
     );`
 
@@ -41,6 +54,7 @@ let sql_createTable_friendlist =
     );`
 
 let sqls2 = sql_createTable_user +
+    sql_createTable_group +
     sql_createTable_friendlist
 
 let sql_signup =
@@ -52,6 +66,25 @@ let sql_existById =
 let sql_findById =
     `select * from ${dbSetting.table_user} where id=? limit 1;`
 
+let sql_createGroup =
+    `insert into ${dbSetting.table_group}(id) values(?)`
+
+let sql_getCntInGroup =
+    `select cnt from ${dbSetting.table_group} where id=?;`
+
+let sql_removeGroup =
+    `delete from ${dbSetting.table_group} where id=?;`
+
+let sql_updateUserUponLogout =
+    `update ${dbSetting.table_user} set nick=?, img=?, groupId=? where id=?;`
+
+let sql_incrementCnt =
+    `update ${dbSetting.table_group} set cnt=cnt+1 where id=?;`
+
+let sql_decrementCnt =
+    `update ${dbSetting.table_group} set cnt=cnt-1 where id=?;
+    select cnt from ${dbSetting.table_group} where id=?;`
+
 module.exports = {
     initialSetup: sqls1,
     newDB: sql_createDB,
@@ -59,4 +92,11 @@ module.exports = {
     sql_existById,
     sql_signup,
     sql_findById,
+    sql_createGroup,
+    sql_getCntInGroup,
+    sql_removeGroup,
+    sql_updateUserUponLogout,
+    sql_incrementCnt,
+    sql_decrementCnt,
+
 }

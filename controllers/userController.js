@@ -1,92 +1,124 @@
-const redisClient = require('../config/redisClient');
-const dataMap = require('../config/dataMap')
-const userDao = require('../models/userDao')
-const resCode = require('../config/resCode')
-const responseHandler = require('../utils/responseHandler')
-const bcrypt = require('bcrypt');
-const saltRounds = 10
-const passport = require('passport');
+// db access
+// can handle socket emission sometimes
 
+// redis,mysql,socket key (socket.group)
+// groupIndicator를 붙여서 등록(redis)
+// createGroup: mysql(group), socket.group, redis(user)
+// enterGroup: mysql(X), redis(group), socket join
+// joinGroup: mysql(group) cnt++, socket.group, redis(user)
+// disjoinGroup: mysql(group) cnt--,mysql(group) remove if(!cnt), delete socket.group, redis(user),redis(group)
+// join: cnt++, disjoin: cnt-- if(!cnt)delete
+// logout시에 유저(+그룹) 정보 업데이트
+
+// create-enter , join-enter , disjoin-leave
+// 로그아웃 시에는 소켓 그룹 나가기를 따로 수행하지 않는다
+
+
+const resCode = require('../config/resCode')
+const redisClient = require('../config/redisClient');
+const dataMap = require('../config/dataMap');
+const dao = require('../models/userDao')
+const sqls = require('../models/settings/sqlDispenser')
 
 module.exports = {
-    signIn: (req, res, next) => {
-        passport.authenticate('local', (err, member, info) => {
-            if (err) return next(err);
-            if (member) {
-                // when using custom callback, need to use req.logIn()
-
-                req.logIn(member, (err) => {
-                    if (err) return next(err)
-
-                    redisClient.hmset(dataMap.sessionUserMap, {
-                        [req.session.id]: member.id,
-                    })
-                    redisClient.hmset(dataMap.onlineUserHm, {
-                        [member.id]: JSON.stringify(member),
-                    })
-                    console.log('[USER]: Login Successful')
-                    console.log()
-                    res.json(responseHandler(true, resCode.success, member.id))
+    update: (socket, nick) => {
+        return new Promise((resolve, reject) => {
+            redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
+                if (err) {
+                    err.reason = 'dbError'
+                    return reject(err)
+                }
+                user = JSON.parse(user)
+                user.nick = nick
+                redisClient.hmset(onlineUserHm, {
+                    [socket.userId]: JSON.stringify(user)
                 })
-
-            } else {
-                console.log('[USER]: Login Failed')
-                console.log()
-                res.json(responseHandler(false, resCode.wrong, null))
-            }
-        })(req, res, next)
-    },
-
-    idCheck: (req, res, next) => {
-        console.log('[USER]: IdCheck')
-        console.log()
-        userDao.existById(req.params.id, (err, response) => {
-            if (err) return next(err)
-            res.json(responseHandler(!response, response ? resCode.exist : resCode.success, null))
+                resolve(true)
+            })
         })
     },
 
-    signUp: (req, res, next) => {
-        let password = req.body.password
-        bcrypt
-            .genSalt(saltRounds)
-            .then(salt => {
-                return bcrypt.hash(password, salt)
+    read: socket => {
+        return new Promise((resolve, reject) => {
+            redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
+                if (err) {
+                    err.reason = 'dbError'
+                    return reject(err)
+                }
+                let refinedUser = JSON.parse(user)
+                delete refinedUser.id
+                delete refinedUser.password
+                return resolve(refinedUser)
             })
-            .then(hash => {
-                // users[username] = addNewUser(username, hash)
-                req.body.password = hash
-                userDao.signup(req.body, (err, response) => {
-                    if (err) {
-                        err.reason = 'dbError'
-                        return next(err)
-                    }
-                    console.log('[USER]: A New User Successfully Created')
-                    console.log()
-                    res.json(responseHandler(response, resCode.success, null))
-                })
-            })
-            .catch(err => next(err))
+        })
     },
 
-    signOut: io => {
-        return (req, res, next) => {
-            redisClient.hget(dataMap.onlineUserHm, req.session.passport.user, (err, user) => {
-                if (err) {
-                    err.reason = 'noInfo'
-                    return next(err)
-                }
-                user = JSON.parse(user)
+    createGroup: (socket, groupId) => {
+        return new Promise(async (resolve, reject) => {
+            try {
+                await dao.sqlHandler(sqls.sql_createGroup, groupId)
+                socket.group = groupId
+                redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
+                    if (err) return reject(err)
+                    user = JSON.parse(user)
+                    user.groupId = groupId
+                    redisClient.hmset(dataMap.onlineUserHm, {
+                        [socket.userId]: JSON.stringify(user)
+                    })
+                    return resolve()
+                })
+            } catch (err) {
+                if (err.errno === 1062) err.reason = resCode.exist
+                else err.reason = resCode.error
+                return reject(err)
+            }
+        })
+    },
 
-                // console.log(io.sockets)
-                // console.log(Object.keys(io.sockets))
-                // console.log(io.sockets.connected)
-                // console.log(io.sockets.sockets)
-                // console.log(io.sockets.sockets.get(user.socketId))
-                let socket = io.sockets.sockets.get(user.socketId)
-                socket.disconnect()
-                res.json(responseHandler(true, resCode.success, null))
-            })
-        }
-    }
+    joinGroup: (socket, groupId) => {
+        return new Promise(async (resolve, reject) => {
+            dao.sqlHandler(sqls.sql_incrementCnt, groupId)
+                .then(resolve)
+                .catch(reject)
+        })
+    },
+
+    disjoinGroup: (socket, groupId) => {
+        return new Promise(async (resolve, reject) => {
+            dao.sqlHandler(sqls.sql_decrementCnt, [groupId, groupId])
+                .then(async result => {
+                    delete socket.groupId
+                    redisClient.srem(dataMap.groupIndicator + socket.groupId, socket.userId)
+                    redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
+                        if (err) return reject(err)
+                        user = JSON.parse(user)
+                        user.groupId = null
+                        redisClient.hmset(dataMap.onlineUserHm, {
+                            [socket.userId]: JSON.stringify(user)
+                        })
+                        if (!result[1][0].cnt) {
+                            try {
+                                await dao.sqlHandler(sqls.sql_removeGroup, groupId)
+                                resolve()
+                            } catch (err) {
+                                reject(err)
+                            }
+                        }
+                        else resolve(result)
+                    })
+                })
+                .catch(reject)
+        })
+    },
+
+    enterGroup: socket => {
+        if (!socket.groupId) return Promise.resolve()
+        return new Promise((resolve, reject) => {
+            socket.join(socket.groupId)
+            redisClient.sadd(dataMap.groupIndicator + socket.groupId, socket.userId)
+            resolve()
+        })
+    },
+
+
 }

@@ -5,6 +5,7 @@ module.exports = {
     sessionUserMap: 'sessionUserMap',
     roomInfoHm: 'roomInfoHm',
     nextRoomId: 'nextRoomId',
+    groupIndicator: 'Group:',
     linesToRead: 10,
     // oldRoomIdQueue:'oldRoomIdQueue',
     // chatLogs:'chatLogs',

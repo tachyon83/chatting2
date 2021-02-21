@@ -9,6 +9,7 @@ module.exports = {
     password: process.env.CLEARDB_PASSWORD || '1234',
     database: process.env.CLEARDB_DATABASE || 'chatdb',
     table_user: 'user',
+    table_group: 'group',
     table_friendlist: 'friendlist',
     table_banlist: 'banlist',
     connectionLimit: 100,

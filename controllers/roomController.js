@@ -9,6 +9,7 @@ const redisClient = require('../config/redisClient');
 const dataMap = require('../config/dataMap')
 const chatDto = require('../models/chatDto')
 const eventEmitter = require('../config/eventEmitter')
+const userController = require('./userController')
 
 module.exports = class RoomController {
     constructor(socket) {
@@ -39,6 +40,13 @@ module.exports = class RoomController {
                     reject(err)
                 }
             })
+        })
+    }
+
+    joinGroup = _ => {
+        return new Promise(async (resolve, reject) => {
+            await userController.enterGroup(this.socket)
+            return resolve()
         })
     }
 
@@ -93,6 +101,17 @@ module.exports = class RoomController {
             })
         })
     }
+
+    // leaveGroup=_=>{
+    //     if(!this.socket.groupId)return Promise.resolve()
+    //     return new Promise((resolve,reject)=>{
+    //         this.socket.leave(this.socket.groupId)
+    //         console.log(`[Group]: ${this.socket.userId} left a group room with ID(${this.socket.groupId}).`)
+    //         console.log()
+    //         delete this.socket.groupId
+    //         // redis 수정...
+    //     })
+    // }
 
     leave = _ => {
         return new Promise((resolve, reject) => {

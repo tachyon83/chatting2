@@ -43,7 +43,11 @@ function db_initSetting() {
 }
 
 async function dbSetup() {
-    await db_initSetting()
-    console.log('DB local setup complete!')
+    try {
+        await db_initSetting()
+        console.log('DB local setup complete!')
+    } catch (err) {
+        console.log(err)
+    }
 }
 dbSetup()

@@ -6,11 +6,19 @@ const responseHandler = require('../../utils/responseHandler')
 const errorHandler = require('../../utils/errorHandler')
 
 
-module.exports = socket => {
+module.exports = (socket, io) => {
 
     socket.on('chat.out', chatDto => {
         chat.save(socket, chatDto)
-            .then(_ => socket.to(socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto)))
+            .then(_ => {
+                if (chatDto.type === 'all') socket.to(socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto))
+                // "로그인시에 group가입여부 확인후 group등의 키워드로 시작하는 방에 소켓 join"
+                else if (chatDto.type === 'group') socket.to(socket.group).emit('chat.in', responseHandler(true, resCode.success, chatDto))
+                else {
+                    // redis에서 해당 유저 소켓아이디 읽어서
+                    io.sockets.socket(listener).emit('chat.in', responseHandler(true, resCode.success, chatDto))
+                }
+            })
             .catch(err => socket.emit('system.error', errorHandler(err)))
     })
 
@@ -20,6 +28,7 @@ module.exports = socket => {
     //         .catch(err => cb(errorHandler(err)))
     // })
 
+    // chat id가 프론트에서 보일 경우, 몇번의 그룹채팅과 귓속말이 있었는지 노출됨...
     socket.on('chat.read', cb => {
         chat.read(socket)
             .then(resultArr => cb(responseHandler(true, resCode.success, resultArr)))
