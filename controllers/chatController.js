@@ -5,14 +5,17 @@ const redisClient = require('../config/redisClient');
 const dataMap = require('../config/dataMap')
 // const chatDto = require('../models/chatDto')
 
-const chatLogsMaker = (socket, id) => {
+const chatLogsMaker = (socket, id, chatLogs) => {
     return new Promise((resolve, reject) => {
         redisClient.lindex(socket.pos + 'chat', id + 1, (err, chatDto) => {
             if (err) return reject(err)
+            let result = {}
+
             chatDto = JSON.parse(chatDto)
-            if (chatDto.from === socket.userId || chatDto.to === socket.userId || (socket.groupId && socket.groupId === chatDto.to)) chatLogs.push(JSON.parse(chatDto))
+            if (chatDto.from === socket.userId || chatDto.to === socket.userId || (socket.groupId && socket.groupId === chatDto.to)) result.chatLog = JSON.parse(chatDto)
             id--
-            resolve(id)
+            result.id = id
+            resolve(result)
         })
     })
 }
@@ -49,7 +52,9 @@ module.exports = {
 
                 while (id >= 0 && chatLogs.length < dataMap.linesToRead) {
                     try {
-                        id = await chatLogsMaker(socket, id)
+                        let result = await chatLogsMaker(socket, id, chatLogs)
+                        id = result.id
+                        chatLogs = chatLogs.push(result.chatLog)
                     } catch (err) {
                         return reject(err)
                     }
