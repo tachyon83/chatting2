@@ -37,7 +37,7 @@ let sql_createTable_user =
 let sql_createTable_group =
     `create table if not exists 
     ${dbSetting.table_group}(
-        id varchar(36) not null unique,
+        id varchar(30) not null,
         cnt int not null default 1,
         primary key(id)
     );`
@@ -53,8 +53,8 @@ let sql_createTable_friendlist =
         on update cascade
     );`
 
-let sqls2 = sql_createTable_user +
-    sql_createTable_group +
+let sqls2 = sql_createTable_group +
+    sql_createTable_user +
     sql_createTable_friendlist
 
 let sql_signup =
