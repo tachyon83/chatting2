@@ -89,7 +89,7 @@ module.exports = {
                 .then(async result => {
                     delete socket.groupId
                     redisClient.srem(dataMap.groupIndicator + socket.groupId, socket.userId)
-                    redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
+                    redisClient.hget(dataMap.onlineUserHm, socket.userId, async (err, user) => {
                         if (err) return reject(err)
                         user = JSON.parse(user)
                         user.groupId = null
