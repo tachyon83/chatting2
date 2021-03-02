@@ -4,6 +4,8 @@ const chat = require('../../controllers/chatController')
 const resCode = require('../../config/resCode')
 const responseHandler = require('../../utils/responseHandler')
 const errorHandler = require('../../utils/errorHandler')
+const redisClient = require('../../config/redisClient')
+const dataMap = require('../../config/dataMap')
 
 
 module.exports = (socket, io) => {
@@ -16,7 +18,11 @@ module.exports = (socket, io) => {
                 else if (chatDto.type === 'group') socket.to(socket.group).emit('chat.in', responseHandler(true, resCode.success, chatDto))
                 else {
                     // redis에서 해당 유저 소켓아이디 읽어서
-                    io.sockets.socket(listener).emit('chat.in', responseHandler(true, resCode.success, chatDto))
+                    redisClient.hget(dataMap.onlineUserHm, chatDto.to, (err, user) => {
+                        if (err) return socket.emit('system.error', errorHandler(err))
+                        user = JSON.parse(user)
+                        io.sockets.socket(user.socketId).emit('chat.in', responseHandler(true, resCode.success, chatDto))
+                    })
                 }
             })
             .catch(err => socket.emit('system.error', errorHandler(err)))
