@@ -49,7 +49,8 @@ module.exports = () => {
         // done(null, id);
     })
     passport.use(new LocalStrategy({
-        usernameField: 'username',
+        // usernameField: 'username',
+        usernameField: 'id',
         passwordField: 'password',
         session: true, //세션에 저장 여부
         // passReqToCallback:false,

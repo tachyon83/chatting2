@@ -36,12 +36,12 @@ require('./controllers/socketioEntry')(io)
 
 app.use((req, res, next) => {
     console.log()
-    console.log('[Current Session ID]: ', req.session.id)
+    console.log('[Current Session ID]:', req.session.id)
     let currTime = new Date();
     let timeStamp = currTime.getHours() + ':' + currTime.getMinutes();
-    console.log('[HTTP CALL]: ', timeStamp)
-    console.log('req.cookies', req.cookies)
-    console.log(req.headers.cookie)
+    console.log('[HTTP CALL]:', timeStamp)
+    // console.log('req.cookies', req.cookies)
+    console.log('[Cookie]:', req.headers.cookie)
     next()
 })
 app.use('/user', require('./routes/user')(io));
