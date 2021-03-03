@@ -24,7 +24,7 @@ let sql_createTable_user =
     ${dbSetting.table_user}(
         id varchar(30) not null,
         password varchar(150) not null,
-        nick varchar(50) not null,
+        nick varchar(50),
         img varchar(500),
         groupId varchar(36) unique,
         primary key(id),
@@ -58,7 +58,7 @@ let sqls2 = sql_createTable_group +
     sql_createTable_friendlist
 
 let sql_signup =
-    `insert into ${dbSetting.table_user}(id,password,nick,img) values(?,?,?,?);`
+    `insert into ${dbSetting.table_user}(id,password,img) values(?,?,?);`
 
 let sql_existById =
     `select count(*) as cnt from ${dbSetting.table_user} where id=?;`

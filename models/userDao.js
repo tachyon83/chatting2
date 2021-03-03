@@ -59,7 +59,7 @@ class Dao {
         let info = [
             q.id,
             q.password,
-            q.nick,
+            // q.nick,
             q.img,
         ]
         this.sqlHandler(sqls.sql_signup, info, fn).then(res => {
