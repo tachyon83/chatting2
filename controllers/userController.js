@@ -140,7 +140,9 @@ module.exports = {
                 const hgetAsync = promisify(redisClient.hget).bind(redisClient)
                 for (let p of list) {
                     try {
-                        result.push(await hgetAsync(dataMap.onlineUserHm, p))
+                        let user = await hgetAsync(dataMap.onlineUserHm, p)
+                        delete user.password
+                        result.push(user)
                     } catch (err) {
                         if (err) return reject(err)
                     }
