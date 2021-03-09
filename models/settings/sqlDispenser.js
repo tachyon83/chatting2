@@ -76,8 +76,8 @@ let sql_removeGroup =
     `delete from ${dbSetting.table_group} where id=?;`
 
 let sql_updateUserUponLogout =
-    // `update ${dbSetting.table_user} set nick=?,img=?,groupId=? where id=?;`
-    `update ${dbSetting.table_user} set nick=?,groupId=? where id=?;`
+    // `update ${dbSetting.table_user} set img=?,groupId=? where id=?;`
+    `update ${dbSetting.table_user} set groupId=? where id=?;`
 
 let sql_incrementCnt =
     `update ${dbSetting.table_group} set cnt=cnt+1 where id=?;`

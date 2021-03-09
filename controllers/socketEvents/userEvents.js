@@ -34,4 +34,10 @@ module.exports = socket => {
             .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
     })
+    socket.on('user.list', cb => {
+        user.list(socket)
+            .then(list => cb(responseHandler(true, resCode.success, list)))
+            .catch(err => cb(errorHandler(err)))
+    })
+
 }

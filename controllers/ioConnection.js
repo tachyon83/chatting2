@@ -86,7 +86,7 @@ module.exports = io => {
                             user = JSON.parse(user)
 
                             try {
-                                await dao.sqlHandler(sqls.sql_updateUserUponLogout, [user.nick, user.groupId, user.id])
+                                await dao.sqlHandler(sqls.sql_updateUserUponLogout, [user.groupId, user.id])
                             } catch (err) {
                                 throw err
                             }

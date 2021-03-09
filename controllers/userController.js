@@ -19,6 +19,7 @@ const redisClient = require('../config/redisClient');
 const dataMap = require('../config/dataMap');
 const dao = require('../models/userDao')
 const sqls = require('../models/settings/sqlDispenser')
+const { promisify } = require('util')
 
 module.exports = {
     update: (socket, nick) => {
@@ -46,9 +47,20 @@ module.exports = {
                     return reject(err)
                 }
                 let refinedUser = JSON.parse(user)
-                delete refinedUser.id
+                // delete refinedUser.id
                 delete refinedUser.password
                 return resolve(refinedUser)
+            })
+        })
+    },
+
+    info: (socket, id) => {
+        return new Promise((resolve, reject) => {
+            redisClient.hget(dataMap.onlineUserHm, id, (err, user) => {
+                if (err) return reject(err)
+                user = JSON.parse(user)
+                delete user.password
+                return resolve(user)
             })
         })
     },
@@ -120,5 +132,22 @@ module.exports = {
         })
     },
 
+    list: socket => {
+        return new Promise((resolve, reject) => {
+            redisClient.smembers(socket.pos, async (err, list) => {
+                if (err) return reject(err)
+                let result = []
+                const hgetAsync = promisify(redisClient.hget).bind(redisClient)
+                for (let p of list) {
+                    try {
+                        result.push(await hgetAsync(dataMap.onlineUserHm, p))
+                    } catch (err) {
+                        if (err) return reject(err)
+                    }
+                }
+                resolve(list)
+            })
+        })
+    },
 
 }
