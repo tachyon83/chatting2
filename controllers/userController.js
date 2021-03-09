@@ -46,21 +46,16 @@ module.exports = {
                     err.reason = 'dbError'
                     return reject(err)
                 }
-                let refinedUser = JSON.parse(user)
-                // delete refinedUser.id
-                delete refinedUser.password
-                return resolve(refinedUser)
+                return resolve(JSON.parse(user))
             })
         })
     },
 
-    info: (socket, id) => {
+    info: id => {
         return new Promise((resolve, reject) => {
             redisClient.hget(dataMap.onlineUserHm, id, (err, user) => {
                 if (err) return reject(err)
-                user = JSON.parse(user)
-                delete user.password
-                return resolve(user)
+                return resolve(JSON.parse(user))
             })
         })
     },
@@ -140,11 +135,9 @@ module.exports = {
                 const hgetAsync = promisify(redisClient.hget).bind(redisClient)
                 for (let p of list) {
                     try {
-                        let user = await hgetAsync(dataMap.onlineUserHm, p)
-                        delete user.password
-                        result.push(user)
+                        result.push(await hgetAsync(dataMap.onlineUserHm, p))
                     } catch (err) {
-                        if (err) return reject(err)
+                        return reject(err)
                     }
                 }
                 resolve(list)

@@ -17,6 +17,11 @@ module.exports = socket => {
             .then(result => cb(responseHandler(true, resCode.success, result)))
             .catch(err => cb(errorHandler(err)))
     })
+    socket.on('user.info', (id, cb) => {
+        user.info(id)
+            .then(result => cb(responseHandler(true, resCode.success, result)))
+            .catch(err => cb(errorHandler(err)))
+    })
     socket.on('user.createGroup', (groupId, cb) => {
         user.createGroup(socket, groupId)
             .then(_ => user.enterGroup(socket))

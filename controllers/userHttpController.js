@@ -21,6 +21,7 @@ module.exports = {
                     redisClient.hmset(dataMap.sessionUserMap, {
                         [req.session.id]: user.id,
                     })
+                    delete user.password
                     redisClient.hmset(dataMap.onlineUserHm, {
                         [user.id]: JSON.stringify(user),
                     })
