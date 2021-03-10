@@ -24,18 +24,22 @@ module.exports = socket => {
     })
     socket.on('user.createGroup', (groupId, cb) => {
         user.createGroup(socket, groupId)
-            .then(_ => user.enterGroup(socket))
+            // it seems like socket object is not updated in this scope,
+            // even after executing the above createGroup.
+            // that is how user.enterGroup(socket) is dealing with previous groupId
+            // .then(_user.enterGroup(socket))
+            .then(user.enterGroup)
             .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
     })
     socket.on('user.joinGroup', (groupId, cb) => {
         user.joinGroup(socket, groupId)
-            .then(_ => user.enterGroup(socket))
+            .then(user.enterGroup)
             .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
     })
     socket.on('user.disjoinGroup', cb => {
-        user.disjoinGroup(socket, groupId)
+        user.disjoinGroup(socket)
             .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
     })

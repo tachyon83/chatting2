@@ -1,5 +1,6 @@
 // const path = require('path'); // OS-independent
 const http = require('http');
+const morgan = require('morgan')
 const express = require('express');
 // const session = require('express-session');
 // const cookieParser = require('cookie-parser')
@@ -10,6 +11,7 @@ const webSettings = require('./config/webSettings')
 const errorHandler = require('./utils/errorHandler')
 const cors = require('cors');
 const app = express();
+app.use(morgan('short'))
 
 app.use(express.json())
 app.set('port', process.env.PORT || 3000);

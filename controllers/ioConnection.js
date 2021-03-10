@@ -38,26 +38,40 @@ module.exports = io => {
         console.log()
 
         // 아래 과정에서 에러 발생시, 중단 처리 관련하여 고민 필요
-        sessionToSocket(socket.request.session.id, socket)
-            .then(async () => {
-                console.log('[IO]: Now Joining Lobby...')
-                console.log()
-                try {
-                    await room.join(dataMap.lobby)
-                    await room.joinGroup()
-                } catch (err) {
-                    // disconnect the socket and clear the info in redis
-                    // but for this time being, throwing err...
-                    throw err
-                }
-            })
-            .catch(err => {
-                console.log(err)
-                console.log()
-                socket.emit('system.error', errorHandler(err))
-                // need to disconnect this socket?
-                throw err
-            })
+        try {
+            await sessionToSocket(socket.request.session.id, socket)
+            console.log('[IO]: Now Joining Lobby...')
+            console.log()
+            await room.join(dataMap.lobby)
+            await room.joinGroup()
+        } catch (err) {
+            console.log(err)
+            console.log()
+            socket.emit('system.error', errorHandler(err))
+            // need to disconnect this socket?
+            throw err
+        }
+
+        // sessionToSocket(socket.request.session.id, socket)
+        //     .then(async () => {
+        //         console.log('[IO]: Now Joining Lobby...')
+        //         console.log()
+        //         try {
+        //             await room.join(dataMap.lobby)
+        //             await room.joinGroup()
+        //         } catch (err) {
+        //             // disconnect the socket and clear the info in redis
+        //             // but for this time being, throwing err...
+        //             throw err
+        //         }
+        //     })
+        //     .catch(err => {
+        //         console.log(err)
+        //         console.log()
+        //         socket.emit('system.error', errorHandler(err))
+        //         // need to disconnect this socket?
+        //         throw err
+        //     })
 
         socket.on('abc', () => {
             console.log('abc test !')
@@ -73,32 +87,30 @@ module.exports = io => {
 
             if (reason === 'server namespace disconnect' || reason === 'transport close') {
                 room.leave()
-                    .then(() => {
+                    .then(_ => {
                         console.log('[IO]: This Socket Left a Room or Lobby')
                         console.log()
-                        redisClient.hdel(dataMap.onlineUserHm, socket.userId)
+
                         redisClient.hdel(dataMap.sessionUserMap, socket.request.session.id)
+                        redisClient.hdel(dataMap.onlineUserHm, socket.userId)
 
-                        if (socket.groupId) redisClient.srem(dataMap.groupIndicator + socket.groupId, socket.userId)
-
-                        redisClient.hget(dataMap.onlineUserHm.socket.userId, async (err, user) => {
-                            if (err) throw err
-                            user = JSON.parse(user)
-
-                            try {
-                                await dao.sqlHandler(sqls.sql_updateUserUponLogout, [user.groupId, user.id])
-                            } catch (err) {
-                                throw err
+                        // socket automatically leaves all the rooms it was in when disconnected?
+                        // so, the socket does not have to manually leaves its group room?
+                        socket.request.logOut()
+                        socket.request.session.destroy(async err => {
+                            if (err) return socket.emit('system.error', errorHandler(err))
+                            console.log('[IO]:', socket.userId + ' has successfully signed out/disconnected.')
+                            console.log()
+                            if (socket.groupId) {
+                                redisClient.srem(dataMap.groupIndicator + socket.groupId, socket.userId)
+                                try {
+                                    await dao.sqlHandler(sqls.sql_updateUserUponLogout, [socket.groupId, socket.userId])
+                                    console.log(`[MySQL]: ${socket.userId}'s groupId(${socket.groupId}) has been added to MySQL.`)
+                                    console.log()
+                                } catch (err) {
+                                    throw err
+                                }
                             }
-
-                            // socket automatically leaves all the rooms it was in when disconnected?
-                            // so, the socket does not have to manually leaves its group room?
-                            socket.request.logOut()
-                            socket.request.session.destroy(err => {
-                                if (err) return socket.emit('system.error', errorHandler(err))
-                                console.log('[IO]:', socket.userId + ' has successfully signed out/disconnected.')
-                                console.log()
-                            })
                         })
                     })
                     .catch(err => console.log(err))
@@ -108,6 +120,7 @@ module.exports = io => {
         require('./socketEvents/roomEvents')(room)
         require('./socketEvents/chatEvents')(socket, io)
         require('./socketEvents/userEvents')(socket)
+        require('./socketEvents/groupEvents')(socket)
 
     })
 }

@@ -13,9 +13,9 @@ module.exports = room => {
     room.socket.on('room.join', (roomDto, cb) => {
         room.leave()
             .then(_ => room.isJoinable(roomDto))
-            .then(joinable => {
+            .then(async joinable => {
                 if (!joinable) return cb(responseHandler(false, resCode.wrong, null))
-                room.join(roomDto.roomId)
+                return await room.join(roomDto.roomId)
             })
             .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
@@ -31,10 +31,8 @@ module.exports = room => {
     room.socket.on('room.create', (roomDto, cb) => {
         room.leave()
             .then(_ => room.create(roomDto))
-            .then(nextRoomId => {
-                room.join(nextRoomId)
-                    .then(_ => cb(responseHandler(true, resCode.success, nextRoomId)))
-            })
+            .then(room.join)
+            .then(nextRoomId => cb(responseHandler(true, resCode.success, nextRoomId)))
             .catch(err => cb(errorHandler(err)))
     })
 

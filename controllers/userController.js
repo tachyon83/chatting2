@@ -40,12 +40,15 @@ module.exports = {
     },
 
     read: socket => {
+        console.log('[userController]: reading this socket info...')
+        console.log()
         return new Promise((resolve, reject) => {
             redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
                 if (err) {
                     err.reason = 'dbError'
                     return reject(err)
                 }
+                console.log(JSON.parse(user))
                 return resolve(JSON.parse(user))
             })
         })
@@ -60,11 +63,12 @@ module.exports = {
         })
     },
 
+    // already cnt=1 by default as soon as a new group is created.
     createGroup: (socket, groupId) => {
         return new Promise(async (resolve, reject) => {
             try {
                 await dao.sqlHandler(sqls.sql_createGroup, groupId)
-                socket.group = groupId
+                socket.groupId = groupId
                 redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
                     if (err) return reject(err)
                     user = JSON.parse(user)
@@ -72,7 +76,7 @@ module.exports = {
                     redisClient.hmset(dataMap.onlineUserHm, {
                         [socket.userId]: JSON.stringify(user)
                     })
-                    return resolve()
+                    return resolve(socket)
                 })
             } catch (err) {
                 if (err.errno === 1062) err.reason = resCode.exist
@@ -82,19 +86,30 @@ module.exports = {
         })
     },
 
+    // take care of MySQL only
+    // need to attack groupId to socket
     joinGroup: (socket, groupId) => {
         return new Promise(async (resolve, reject) => {
-            dao.sqlHandler(sqls.sql_incrementCnt, groupId)
-                .then(resolve)
-                .catch(reject)
+            socket.groupId = groupId
+            redisClient.hget(dataMap.onlineUserHm, socket.userId, (err, user) => {
+                if (err) return reject(err)
+                user = JSON.parse(user)
+                user.groupId = groupId
+                redisClient.hmset(dataMap.onlineUserHm, {
+                    [socket.userId]: JSON.stringify(user)
+                })
+                dao.sqlHandler(sqls.sql_incrementCnt, groupId)
+                    .then(_ => resolve(socket))
+                    .catch(reject)
+            })
         })
     },
 
-    disjoinGroup: (socket, groupId) => {
+    disjoinGroup: socket => {
         return new Promise(async (resolve, reject) => {
-            dao.sqlHandler(sqls.sql_decrementCnt, [groupId, groupId])
+            redisClient.srem(dataMap.groupIndicator + socket.groupId, socket.userId)
+            dao.sqlHandler(sqls.sql_decrementCnt, [socket.groupId, socket.groupId])
                 .then(async result => {
-                    delete socket.groupId
                     redisClient.srem(dataMap.groupIndicator + socket.groupId, socket.userId)
                     redisClient.hget(dataMap.onlineUserHm, socket.userId, async (err, user) => {
                         if (err) return reject(err)
@@ -105,24 +120,38 @@ module.exports = {
                         })
                         if (!result[1][0].cnt) {
                             try {
-                                await dao.sqlHandler(sqls.sql_removeGroup, groupId)
+                                await dao.sqlHandler(sqls.sql_removeGroup, socket.groupId)
+                                delete socket.groupId
                                 resolve()
                             } catch (err) {
                                 reject(err)
                             }
                         }
-                        else resolve(result)
+                        else {
+                            delete socket.groupId
+                            resolve(result)
+                        }
                     })
                 })
                 .catch(reject)
         })
     },
 
+    // socket.join and handle redis(group members, not the onlineUserHm)
+    // at this point, socket has socket.groupId
     enterGroup: socket => {
         if (!socket.groupId) return Promise.resolve()
         return new Promise((resolve, reject) => {
-            socket.join(socket.groupId)
+            console.log('now adding group info')
+            console.log(socket.groupId, socket.userId)
+            console.log()
+            // redisClient.sadd(dataMap.groupIndicator + socket.groupId, socket.userId)
             redisClient.sadd(dataMap.groupIndicator + socket.groupId, socket.userId)
+            try {
+                socket.join(socket.groupId)
+            } catch (err) {
+                console.log('err while joining group', err)
+            }
             resolve()
         })
     },
