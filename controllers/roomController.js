@@ -76,6 +76,13 @@ module.exports = class RoomController {
                 } catch (err) {
                     return reject(err)
                 }
+                eventEmitter.emit('user.list.refresh', {
+                    roomId,
+                    userDto: {
+                        userId: this.socket.userId,
+                        isOnline: true,
+                    }
+                })
 
                 if (roomId === dataMap.lobby) {
                     console.log(`[Lobby]: ${this.socket.userId} joined the lobby.`)
@@ -123,6 +130,14 @@ module.exports = class RoomController {
             console.log(`[Room]: ${this.socket.userId} left a Room with ID(${this.socket.pos}).`)
             console.log()
             this.socket.to(this.socket.pos).emit('chat.in', chatDto(null, null, '[Farewell]: ' + this.socket.userId + ' left', 'all'))
+
+            eventEmitter.emit('user.list.refresh', {
+                roomId: this.socket.pos,
+                userDto: {
+                    userId: this.socket.userId,
+                    isOnline: false,
+                }
+            })
 
             if (this.socket.pos === dataMap.lobby) return resolve(true)
 

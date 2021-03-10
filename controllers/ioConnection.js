@@ -17,6 +17,14 @@ module.exports = io => {
     // console.log(io.sockets.adapter.rooms['0'].sockets)
     // console.log(Object.keys(io.sockets.adapter.rooms['0'].sockets))
 
+    // 해당 유저의 온라인 여부 + 정보를 어디까지 포함해서 보낼지?
+    // eventEmitter.on('lobby.user.list.refresh', userDto => {
+    //     io.in(dataMap.lobby).emit('lobby.user.list.refresh', responseHandler(true, resCode.success, userDto))
+    // })
+    eventEmitter.on('user.list.refresh', roomAndUserDtoInfo => {
+        io.in(roomAndUserDtoInfo.roomId).emit('user.list.refresh', responseHandler(true, resCode.success, roomAndUserDtoInfo.userDto))
+    })
+
     eventEmitter.on('room.list.refresh', roomDto => {
         // console.log('io.sockets', Object.keys(io.sockets))
         // console.log('io.sockets._events', Object.keys(io.sockets._events))
