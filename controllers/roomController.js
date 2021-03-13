@@ -45,8 +45,12 @@ module.exports = class RoomController {
 
     joinGroup = _ => {
         return new Promise(async (resolve, reject) => {
-            await userController.enterGroup(this.socket)
-            return resolve()
+            try {
+                await userController.enterGroup(this.socket)
+                return resolve()
+            } catch (err) {
+                return reject(err)
+            }
         })
     }
 

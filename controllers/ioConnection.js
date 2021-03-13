@@ -38,7 +38,8 @@ module.exports = io => {
 
     io.on('connection', async socket => {
 
-        const room = new roomController(socket)
+        // const room = new roomController(socket)
+        let room
 
         console.log('[IO]: A New Socket Connected!')
         console.log('[IO]: Session ID in this Socket:', socket.request.session.id)
@@ -48,10 +49,22 @@ module.exports = io => {
         // 아래 과정에서 에러 발생시, 중단 처리 관련하여 고민 필요
         try {
             await sessionToSocket(socket.request.session.id, socket)
+            room = new roomController(socket)
             console.log('[IO]: Now Joining Lobby...')
             console.log()
+            require('./socketEvents/roomEvents')(room)
+            require('./socketEvents/chatEvents')(socket, io)
+            require('./socketEvents/userEvents')(socket)
+            require('./socketEvents/groupEvents')(socket)
+            console.log('socket events', socket.eventNames())
+
             await room.join(dataMap.lobby)
             await room.joinGroup()
+            // room.joinGroup()
+
+            socket.emit('socket.ready', true, fromFront => {
+                console.log('fromFront', fromFront)
+            })
         } catch (err) {
             console.log(err)
             console.log()
@@ -125,10 +138,11 @@ module.exports = io => {
             }
         })
 
-        require('./socketEvents/roomEvents')(room)
-        require('./socketEvents/chatEvents')(socket, io)
-        require('./socketEvents/userEvents')(socket)
-        require('./socketEvents/groupEvents')(socket)
+        // require('./socketEvents/roomEvents')(room)
+        // require('./socketEvents/chatEvents')(socket, io)
+        // require('./socketEvents/userEvents')(socket)
+        // require('./socketEvents/groupEvents')(socket)
+        // console.log('sockt events', socket.eventNames())
 
     })
 }

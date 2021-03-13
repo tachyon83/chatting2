@@ -55,6 +55,8 @@ module.exports = {
     },
 
     info: id => {
+        console.log('[userController]: getting info...')
+        console.log()
         return new Promise((resolve, reject) => {
             redisClient.hget(dataMap.onlineUserHm, id, (err, user) => {
                 if (err) return reject(err)
