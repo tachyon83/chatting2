@@ -158,9 +158,27 @@ module.exports = {
         })
     },
 
-    list: socket => {
+    listInRoom: socket => {
         return new Promise((resolve, reject) => {
             redisClient.smembers(socket.pos, async (err, list) => {
+                if (err) return reject(err)
+                // let result = []
+                // const hgetAsync = promisify(redisClient.hget).bind(redisClient)
+                // for (let p of list) {
+                //     try {
+                //         result.push(await hgetAsync(dataMap.onlineUserHm, p))
+                //     } catch (err) {
+                //         return reject(err)
+                //     }
+                // }
+                resolve(list)
+            })
+        })
+    },
+
+    listInLobby: _ => {
+        return new Promise((resolve, reject) => {
+            redisClient.smembers(dataMap.lobby, async (err, list) => {
                 if (err) return reject(err)
                 // let result = []
                 // const hgetAsync = promisify(redisClient.hget).bind(redisClient)

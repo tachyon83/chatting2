@@ -43,8 +43,13 @@ module.exports = socket => {
             .then(_ => cb(responseHandler(true, resCode.success, null)))
             .catch(err => cb(errorHandler(err)))
     })
-    socket.on('user.list', cb => {
-        user.list(socket)
+    socket.on('user.listInRoom', cb => {
+        user.listInRoom(socket)
+            .then(list => cb(responseHandler(true, resCode.success, list)))
+            .catch(err => cb(errorHandler(err)))
+    })
+    socket.on('user.listInLobby', cb => {
+        user.listInLobby()
             .then(list => cb(responseHandler(true, resCode.success, list)))
             .catch(err => cb(errorHandler(err)))
     })
