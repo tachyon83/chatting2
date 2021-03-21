@@ -223,6 +223,9 @@ module.exports = class RoomController {
                     return reject(err)
                 }
 
+                console.log(`[Room]: ${this.socket.userId} is getting Room(${this.socket.pos}) Info.`)
+                console.log()
+
                 roomInfo = JSON.parse(roomInfo)
                 resolve(roomInfo)
             })

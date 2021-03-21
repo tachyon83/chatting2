@@ -22,6 +22,8 @@ module.exports = io => {
     //     io.in(dataMap.lobby).emit('lobby.user.list.refresh', responseHandler(true, resCode.success, userDto))
     // })
     eventEmitter.on('user.list.refresh', roomAndUserDtoInfo => {
+        console.log('[Refresh Event]: user.list.refresh event occurred!')
+        console.log()
         io.in(roomAndUserDtoInfo.roomId).emit('user.list.refresh', responseHandler(true, resCode.success, roomAndUserDtoInfo.userDto))
     })
 
@@ -32,6 +34,8 @@ module.exports = io => {
         // console.log('io.sockets.connected', Object.keys(io.sockets.connected))
         console.log('io.sockets.adapter.rooms', io.sockets.adapter.rooms)
         // console.log(io.sockets.adapter.rooms['0'].sockets)
+        console.log('[Refresh Event]: user.list.refresh event occurred!')
+        console.log()
         io.in(dataMap.lobby).emit('room.list.refresh', responseHandler(true, resCode.success, roomDto))
         // io.sockets.in(dataMap.lobby).emit('room.list.refresh', responseHandler(true, resCode.success, roomDto))
     })
