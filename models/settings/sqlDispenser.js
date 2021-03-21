@@ -26,13 +26,13 @@ let sql_createTable_user =
         password varchar(150) not null,
         nick varchar(50),
         img varchar(500),
-        groupId varchar(36) unique,
+        groupId varchar(36),
         primary key(id),
         foreign key(groupId) 
         references ${dbSetting.table_group}(id) 
         on update cascade 
-        on delete cascade
     );`
+// on delete cascade
 
 let sql_createTable_group =
     `create table if not exists 

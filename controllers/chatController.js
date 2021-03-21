@@ -25,6 +25,7 @@ module.exports = {
         console.log(`[chatController]: socket(${socket.userId}) has sent a message(${chatDto}).`)
         console.log()
         return new Promise((resolve, reject) => {
+            console.log('socket.pos', socket.pos)
             redisClient.llen(socket.pos + 'chat', (err, len) => {
                 if (err) return reject(err)
                 if (!len) chatDto.id = 0
