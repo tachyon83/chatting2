@@ -80,7 +80,7 @@ module.exports = class RoomController {
                 } catch (err) {
                     return reject(err)
                 }
-                eventEmitter.emit('user.list.refresh', {
+                eventEmitter.emit((roomId === dataMap.lobby) ? 'user.listInLobby.refresh' : 'user.listInRoom.refresh', {
                     roomId,
                     userDto: {
                         userId: this.socket.userId,
@@ -135,7 +135,7 @@ module.exports = class RoomController {
             console.log()
             this.socket.to(this.socket.pos).emit('chat.in', chatDto(null, null, '[Farewell]: ' + this.socket.userId + ' left', 'all'))
 
-            eventEmitter.emit('user.list.refresh', {
+            eventEmitter.emit((this.socket.pos === dataMap.lobby) ? 'user.listInLobby.refresh' : 'user.listInRoom.refresh', {
                 roomId: this.socket.pos,
                 userDto: {
                     userId: this.socket.userId,
