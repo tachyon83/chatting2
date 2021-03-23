@@ -192,7 +192,7 @@ module.exports = {
     },
 
     listInLobby: _ => {
-        console.log(`[userController]: ${socket.userId} is asking for list in Lobby.`)
+        console.log(`[userController]: getting user list in Lobby.`)
         console.log()
         return new Promise((resolve, reject) => {
             redisClient.smembers(dataMap.lobby, async (err, list) => {
