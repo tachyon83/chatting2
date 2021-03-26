@@ -13,8 +13,8 @@ module.exports = (socket, io) => {
     socket.on('chat.out', chatDto => {
         chat.save(socket, chatDto)
             .then(_ => {
-                console.log('여기서 잘찍히느냐', socket.pos)
-                console.log('type?', chatDto.type)
+                console.log('socket.pos in chatEvents:', socket.pos)
+                console.log('chatDto in chatEvents:', chatDto)
                 if (chatDto.type === 'all') {
                     console.log(`[chatEvents]: socket(${socket.userId}) is sending a chatDto(${chatDto.text}) to everyone in his/her room.`)
                     console.log()
@@ -27,8 +27,7 @@ module.exports = (socket, io) => {
                     console.log()
                     // socket.to(socket.groupId).emit('chat.in', responseHandler(true, resCode.success, chatDto))
                     io.in(socket.groupId).emit('chat.in', responseHandler(true, resCode.success, chatDto))
-                }
-                else {
+                } else {
                     // redis에서 해당 유저 소켓아이디 읽어서
                     redisClient.hget(dataMap.onlineUserHm, chatDto.to, (err, user) => {
                         if (err) return socket.emit('system.error', errorHandler(err))

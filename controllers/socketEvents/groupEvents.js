@@ -12,8 +12,7 @@ module.exports = socket => {
     socket.on('group.list', cb => {
         redisClient.keys(dataMap.groupIndicator + '*', (err, list) => {
             if (err) return cb(errorHandler(err))
-            list = list.map(e => e.substr(6))
-            cb(responseHandler(true, resCode.success, result))
+            cb(responseHandler(true, resCode.success, list.map(e => e.substr(6))))
         })
     })
 }
