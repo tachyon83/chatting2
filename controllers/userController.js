@@ -136,12 +136,12 @@ module.exports = {
                                     isOnline: false,
                                 })
                             }
-                            delete socket.groupId
                             if (!result[1][0].cnt) {
                                 try {
                                     await dao.sqlHandler(sqls.sql_removeGroup, socket.groupId)
                                     console.log(`[userController]: ${socket.userId} has successfully disjoined a Group with ID(${socket.groupId}).`)
                                     console.log()
+                                    delete socket.groupId
                                     resolve()
                                 } catch (err) {
                                     reject(err)
@@ -150,6 +150,7 @@ module.exports = {
                             else {
                                 console.log(`[userController]: ${socket.userId} has successfully disjoined a Group with ID(${socket.groupId}).`)
                                 console.log()
+                                delete socket.groupId
                                 resolve(result)
                             }
                         })

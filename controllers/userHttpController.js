@@ -84,8 +84,8 @@ module.exports = {
                 // console.log(io.sockets.connected)
                 // console.log(io.sockets.sockets)
                 // console.log(io.sockets.sockets.get(user.socketId))
-                let socket = io.sockets.sockets.get(user.socketId)
-                socket.disconnect()
+                // let socket = io.sockets.sockets.get(user.socketId)
+                // socket.disconnect()
                 res.json(responseHandler(true, resCode.success, null))
             })
         }

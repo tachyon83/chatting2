@@ -31,6 +31,7 @@ let sql_createTable_user =
         foreign key(groupId) 
         references ${dbSetting.table_group}(id) 
         on update cascade 
+        on delete set null
     );`
 // on delete cascade
 
@@ -53,7 +54,8 @@ let sql_createTable_friendlist =
         on update cascade
     );`
 
-let sqls2 = sql_createTable_group +
+let sqls2 =
+    sql_createTable_group +
     sql_createTable_user +
     sql_createTable_friendlist
 
