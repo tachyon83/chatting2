@@ -21,6 +21,11 @@ module.exports = io => {
     // eventEmitter.on('lobby.user.list.refresh', userDto => {
     //     io.in(dataMap.lobby).emit('lobby.user.list.refresh', responseHandler(true, resCode.success, userDto))
     // })
+    eventEmitter.on('group.list.refresh', groupInfo => {
+        console.log('[Refresh Event]: group.list.refresh event occurred!')
+        console.log()
+        io.in(dataMap.lobby).emit('group.list.refresh', responseHandler(true, resCode.success, groupInfo))
+    })
     eventEmitter.on('user.listInRoom.refresh', roomAndUserDtoInfo => {
         console.log('[Refresh Event]: user.listInRoom.refresh event occurred!')
         console.log()
@@ -116,7 +121,7 @@ module.exports = io => {
             console.log('[IO]: Disconnecting Reason', reason);
             console.log()
 
-            if (reason === 'server namespace disconnect' || reason === 'transport close') {
+            if (reason === 'server namespace disconnect' || reason === 'transport close' || reason === 'client namespace disconnect') {
                 room.leave()
                     .then(_ => {
                         console.log('[IO]: This Socket Left a Room or Lobby')
