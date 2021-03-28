@@ -8,7 +8,8 @@ const bcrypt = require('bcrypt');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const userDao = require('../models/userDao')
-const redisClient = require('../config/redisClient');
+// const redisClient = require('../config/redisClient');
+const redisHandler = require('../config/redisHandler');
 const dataMap = require('./dataMap')
 
 module.exports = () => {
@@ -26,17 +27,19 @@ module.exports = () => {
         if (user) return done(null, user.id);
         return done(null, null)
     })
-    passport.deserializeUser((id, done) => {
+    passport.deserializeUser(async (id, done) => {
         // at first, req.session.passport is not defined
         // through this 'deserialize' process, passport is attached
 
         // console.log('session', req.session) <-undefined maybe
         // console.log('deserialize called and req.user is registered')
 
-        redisClient.hget(dataMap.onlineUserHm, id, (err, user) => {
-            if (err) return done(err, null)
+        try {
+            let user = await redisHandler.hget(dataMap.onlineUserHm, id)
             return done(null, user ? id : null)
-        })
+        } catch (err) {
+            return done(err, null)
+        }
 
         // userDao.existById(id, (err, response) => {
         //     if (err) return done(err, null)
@@ -55,8 +58,10 @@ module.exports = () => {
         // passReqToCallback:false,
         passReqToCallback: true,
     }, (req, id, pw, done) => {
+        console.log(id, pw)
         userDao.findById(id, (err, user) => {
             if (err) return done(err, false)
+            console.log(user)
             if (user) {
                 bcrypt.compare(pw, user.password, (err, res) => {
                     if (err) return done(err, false)

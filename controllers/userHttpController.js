@@ -1,4 +1,5 @@
-const redisClient = require('../config/redisClient');
+// const redisClient = require('../config/redisClient');
+const redisHandler = require('../config/redisHandler');
 const dataMap = require('../config/dataMap')
 const userDao = require('../models/userDao')
 const resCode = require('../config/resCode')
@@ -18,11 +19,11 @@ module.exports = {
                 req.logIn(user, (err) => {
                     if (err) return next(err)
 
-                    redisClient.hmset(dataMap.sessionUserMap, {
+                    redisHandler.hmset(dataMap.sessionUserMap, {
                         [req.session.id]: user.id,
                     })
                     delete user.password
-                    redisClient.hmset(dataMap.onlineUserHm, {
+                    redisHandler.hmset(dataMap.onlineUserHm, {
                         [user.id]: JSON.stringify(user),
                     })
                     console.log('[USER]: Login Successful')
@@ -71,23 +72,32 @@ module.exports = {
     },
 
     signOut: io => {
-        return (req, res, next) => {
-            redisClient.hget(dataMap.onlineUserHm, req.session.passport.user, (err, user) => {
-                if (err) {
-                    err.reason = 'noInfo'
-                    return next(err)
-                }
-                user = JSON.parse(user)
+        return async (req, res, next) => {
+            // this needs some fix...
+            res.json(responseHandler(true, resCode.success, null))
+            try {
+                // let user=await redisHandler.hget(dataMap.onlineUserHm,req.session.passport.user)
 
-                // console.log(io.sockets)
-                // console.log(Object.keys(io.sockets))
-                // console.log(io.sockets.connected)
-                // console.log(io.sockets.sockets)
-                // console.log(io.sockets.sockets.get(user.socketId))
-                // let socket = io.sockets.sockets.get(user.socketId)
-                // socket.disconnect()
-                res.json(responseHandler(true, resCode.success, null))
-            })
+            } catch (err) {
+
+            }
+
+            // redisClient.hget(dataMap.onlineUserHm, req.session.passport.user, (err, user) => {
+            //     if (err) {
+            //         err.reason = 'noInfo'
+            //         return next(err)
+            //     }
+            //     user = JSON.parse(user)
+
+            //     // console.log(io.sockets)
+            //     // console.log(Object.keys(io.sockets))
+            //     // console.log(io.sockets.connected)
+            //     // console.log(io.sockets.sockets)
+            //     // console.log(io.sockets.sockets.get(user.socketId))
+            //     // let socket = io.sockets.sockets.get(user.socketId)
+            //     // socket.disconnect()
+            //     res.json(responseHandler(true, resCode.success, null))
+            // })
         }
     }
 }

@@ -1,4 +1,4 @@
-const redisClient = require('../config/redisClient');
+const redisHandler = require('../config/redisHandler');
 const dataMap = require('../config/dataMap')
 const resCode = require('../config/resCode')
 const sessionToSocket = require('../utils/sessionToSocket')
@@ -127,8 +127,8 @@ module.exports = io => {
                         console.log('[IO]: This Socket Left a Room or Lobby')
                         console.log()
 
-                        redisClient.hdel(dataMap.sessionUserMap, socket.request.session.id)
-                        redisClient.hdel(dataMap.onlineUserHm, socket.userId)
+                        redisHandler.hdel(dataMap.sessionUserMap, socket.request.session.id)
+                        redisHandler.hdel(dataMap.onlineUserHm, socket.userId)
 
                         // socket automatically leaves all the rooms it was in when disconnected?
                         // so, the socket does not have to manually leaves its group room?
@@ -138,7 +138,7 @@ module.exports = io => {
                             console.log('[IO]:', socket.userId + ' has successfully signed out/disconnected.')
                             console.log()
                             if (socket.groupId) {
-                                redisClient.srem(dataMap.groupIndicator + socket.groupId, socket.userId)
+                                redisHandler.srem(dataMap.groupIndicator + socket.groupId, socket.userId)
                                 try {
                                     await dao.sqlHandler(sqls.sql_updateUserUponLogout, [socket.groupId, socket.userId])
                                     console.log(`[MySQL]: ${socket.userId}'s groupId(${socket.groupId}) has been added to MySQL.`)

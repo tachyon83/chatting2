@@ -4,7 +4,7 @@ const chat = require('../../controllers/chatController')
 const resCode = require('../../config/resCode')
 const responseHandler = require('../../utils/responseHandler')
 const errorHandler = require('../../utils/errorHandler')
-const redisClient = require('../../config/redisClient')
+const redisHandler = require('../../config/redisHandler')
 const dataMap = require('../../config/dataMap')
 
 
@@ -12,7 +12,7 @@ module.exports = (socket, io) => {
 
     socket.on('chat.out', chatDto => {
         chat.save(socket, chatDto)
-            .then(_ => {
+            .then(async _ => {
                 console.log('socket.pos in chatEvents:', socket.pos)
                 console.log('chatDto in chatEvents:', chatDto)
                 if (chatDto.type === 'all') {
@@ -29,13 +29,15 @@ module.exports = (socket, io) => {
                     io.in(socket.groupId).emit('chat.in', responseHandler(true, resCode.success, chatDto))
                 } else {
                     // redis에서 해당 유저 소켓아이디 읽어서
-                    redisClient.hget(dataMap.onlineUserHm, chatDto.to, (err, user) => {
-                        if (err) return socket.emit('system.error', errorHandler(err))
+                    try {
+                        let user = await redisHandler.hget(dataMap.onlineUserHm, chatDto.to)
                         user = JSON.parse(user)
                         console.log(`[chatEvents]: socket(${socket.userId}) is whispering a chatDto(${chatDto.text}) to ${user.id}.`)
                         console.log()
                         io.to(user.socketId).emit('chat.in', responseHandler(true, resCode.success, chatDto))
-                    })
+                    } catch (err) {
+                        return socket.emit('system.error', errorHandler(err))
+                    }
                 }
             })
             .catch(err => socket.emit('system.error', errorHandler(err)))

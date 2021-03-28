@@ -1,4 +1,4 @@
-const redisClient = require('../config/redisClient');
+const redisHandler = require('../config/redisHandler');
 const dataMap = require('../config/dataMap')
 
 /* 
@@ -10,25 +10,23 @@ const dataMap = require('../config/dataMap')
     this socket will not join lobby and its group here.
 */
 
-
 module.exports = (sessionId, socket) => {
-    return new Promise((resolve, reject) => {
-
-        redisClient.hget(dataMap.sessionUserMap, sessionId, (err, userId) => {
-            if (err) return reject(err)
+    return new Promise(async (resolve, reject) => {
+        try {
+            let userId = await redisHandler.hget(dataMap.sessionUserMap, sessionId)
             socket.userId = userId
-            redisClient.hget(dataMap.onlineUserHm, userId, (err, user) => {
-                if (err) return reject(err)
-                user = JSON.parse(user)
-                user.socketId = socket.id
-                socket.groupId = user.groupId
-                redisClient.hmset(dataMap.onlineUserHm, {
-                    [userId]: JSON.stringify(user)
-                })
-                console.log('[SessionToSocket]: Complete.')
-                console.log()
-                resolve()
+            let user = await redisHandler.hget(dataMap.onlineUserHm, userId)
+            user = JSON.parse(user)
+            user.socketId = socket.id
+            socket.groupId = user.groupId
+            redisHandler.hmset(dataMap.onlineUserHm, {
+                [userId]: JSON.stringify(user)
             })
-        })
+            console.log('[SessionToSocket]: Complete.')
+            console.log()
+            resolve()
+        } catch (err) {
+            return reject(err)
+        }
     })
 }
