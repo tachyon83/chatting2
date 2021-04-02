@@ -21,6 +21,12 @@ module.exports = io => {
     // eventEmitter.on('lobby.user.list.refresh', userDto => {
     //     io.in(dataMap.lobby).emit('lobby.user.list.refresh', responseHandler(true, resCode.success, userDto))
     // })
+
+    eventEmitter.on('room.info.refresh', roomInfo => {
+        console.log('[Refresh Event]: room.info.refresh event occurred!')
+        console.log()
+        io.in(roomInfo.roomId).emit('room.info.refresh', responseHandler(true, resCode.success, roomInfo))
+    })
     eventEmitter.on('group.list.refresh', groupInfo => {
         console.log('[Refresh Event]: group.list.refresh event occurred!')
         console.log()
@@ -127,32 +133,31 @@ module.exports = io => {
                         console.log('[IO]: This Socket Left a Room or Lobby')
                         console.log()
 
-                        redisHandler.hdel(dataMap.sessionUserMap, socket.request.session.id)
-                        redisHandler.hdel(dataMap.onlineUserHm, socket.userId)
+                        try {
+                            redisHandler.hdel(dataMap.sessionUserMap, socket.request.session.id)
+                            redisHandler.hdel(dataMap.onlineUserHm, socket.userId)
 
-                        // socket automatically leaves all the rooms it was in when disconnected?
-                        // so, the socket does not have to manually leaves its group room?
-                        socket.request.logOut()
-                        socket.request.session.destroy(async err => {
-                            if (err) return socket.emit('system.error', errorHandler(err))
-                            console.log('[IO]:', socket.userId + ' has successfully signed out/disconnected.')
-                            console.log()
-                            if (socket.groupId) {
+                            // socket automatically leaves all the rooms it was in when disconnected?
+                            // so, the socket does not have to manually leaves its group room?
+                            socket.request.logOut()
+                            socket.request.session.destroy(async err => {
+                                if (err) return socket.emit('system.error', errorHandler(err))
+                                console.log('[IO]:', socket.userId + ' has successfully signed out/disconnected.')
+                                console.log()
                                 redisHandler.srem(dataMap.groupIndicator + socket.groupId, socket.userId)
-                                try {
-                                    await dao.sqlHandler(sqls.sql_updateUserUponLogout, [socket.groupId, socket.userId])
-                                    console.log(`[MySQL]: ${socket.userId}'s groupId(${socket.groupId}) has been added to MySQL.`)
-                                    console.log()
-                                } catch (err) {
-                                    throw err
-                                }
-                            }
-                        })
+                                await dao.sqlHandler(sqls.sql_updateUserUponLogout, [socket.groupId, socket.userId])
+                                console.log(`[MySQL]: ${socket.userId}'s groupId(${socket.groupId}) has been added to MySQL.`)
+                                console.log()
+                            })
+                        } catch (err) {
+                            throw err
+                        }
                     })
                     .catch(err => console.log(err))
             }
         })
 
+        // done this up above because events must be registered in early phase.
         // require('./socketEvents/roomEvents')(room)
         // require('./socketEvents/chatEvents')(socket, io)
         // require('./socketEvents/userEvents')(socket)

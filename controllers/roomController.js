@@ -234,11 +234,12 @@ module.exports = class RoomController {
                     [roomDto.roomId]: JSON.stringify(roomInfo)
                 })
                 eventEmitter.emit('room.list.refresh', roomInfo)
-
+                eventEmitter.emit('room.info.refresh', roomInfo)
                 console.log(`[Room]: A Room with ID(${this.socket.pos}) has been updated.`)
                 console.log()
 
                 this.socket.to(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[UPDATE]: room info updated', 'all')))
+
                 resolve(true)
 
             } catch (err) {

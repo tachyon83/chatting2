@@ -34,6 +34,7 @@ module.exports = (socket, io) => {
                         user = JSON.parse(user)
                         console.log(`[chatEvents]: socket(${socket.userId}) is whispering a chatDto(${chatDto.text}) to ${user.id}.`)
                         console.log()
+                        io.to(socket.id).emit('chat.in', responseHandler(true, resCode.success, chatDto))
                         io.to(user.socketId).emit('chat.in', responseHandler(true, resCode.success, chatDto))
                     } catch (err) {
                         return socket.emit('system.error', errorHandler(err))
