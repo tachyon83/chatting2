@@ -14,7 +14,7 @@ const app = express();
 app.use(morgan('short'))
 
 app.use(express.json())
-app.set('port', process.env.PORT || 3000);
+app.set('port', process.env.PORT || 3005);
 app.use(webSettings.sessionRedisMiddleware)
 // app.use(session(webSettings.sessionRedisSettings))
 // app.use(cookieParser()) // cookieParser adds cookies to req.
