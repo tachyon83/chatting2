@@ -15,8 +15,9 @@ const userController = require('./userController')
 const responseHandler = require('../utils/responseHandler')
 
 module.exports = class RoomController {
-    constructor(socket) {
+    constructor(socket, io) {
         this.socket = socket
+        this.io = io
     }
 
     isJoinable = roomDto => {
@@ -100,7 +101,8 @@ module.exports = class RoomController {
                 console.log()
                 eventEmitter.emit('room.list.refresh', roomInfo)
 
-                this.socket.to(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[Welcome]: ' + this.socket.userId + ' joined', 'all')))
+                this.io.in(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[Welcome]: ' + this.socket.userId + ' joined', 'all')))
+                // this.socket.to(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[Welcome]: ' + this.socket.userId + ' joined', 'all')))
                 resolve(roomId)
 
             } catch (err) {
@@ -127,7 +129,8 @@ module.exports = class RoomController {
                 redisHandler.srem(this.socket.pos, this.socket.userId)
                 console.log(`[Room]: ${this.socket.userId} left a Room with ID(${this.socket.pos}).`)
                 console.log()
-                this.socket.to(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[Farewell]: ' + this.socket.userId + ' left', 'all')))
+                this.io.in(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[Farewell]: ' + this.socket.userId + ' left', 'all')))
+                // this.socket.to(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[Farewell]: ' + this.socket.userId + ' left', 'all')))
 
                 eventEmitter.emit((this.socket.pos === dataMap.lobby) ? 'user.listInLobby.refresh' : 'user.listInRoom.refresh', {
                     roomId: this.socket.pos,
@@ -238,7 +241,8 @@ module.exports = class RoomController {
                 console.log(`[Room]: A Room with ID(${this.socket.pos}) has been updated.`)
                 console.log()
 
-                this.socket.to(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[UPDATE]: room info updated', 'all')))
+                this.io.in(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[UPDATE]: room info updated', 'all')))
+                // this.socket.to(this.socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto(null, null, '[UPDATE]: room info updated', 'all')))
 
                 resolve(true)
 

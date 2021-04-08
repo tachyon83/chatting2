@@ -70,7 +70,7 @@ module.exports = io => {
         // 아래 과정에서 에러 발생시, 중단 처리 관련하여 고민 필요
         try {
             await sessionToSocket(socket.request.session.id, socket)
-            room = new roomController(socket)
+            room = new roomController(socket, io)
             console.log('[IO]: Now Joining Lobby...')
             console.log()
             require('./socketEvents/roomEvents')(room)
