@@ -53,7 +53,7 @@ module.exports = (socket, io) => {
     // })
 
     // chat id가 프론트에서 보일 경우, 몇번의 그룹채팅과 귓속말이 있었는지 노출됨...
-    socket.on('chat.read', cb => {
+    socket.on('chat.read', (chatDtoId,cb) => {
         chat.read(socket, chatDtoId)
             .then(resultArr => cb(responseHandler(true, resCode.success, resultArr)))
             // .catch(err => cb(errorHandler(err)))
