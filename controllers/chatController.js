@@ -53,7 +53,8 @@ module.exports = {
             try {
                 let len = parseInt(await redisHandler.llen(socket.pos + 'chat'))
                 let chatLogs = []
-                if (!len || !chatDtoId) return resolve(chatLogs)
+                if (!len) return resolve(chatLogs)
+                if(!chatDtoId)chatDtoId=len-1
                 while (chatDtoId > 0 && chatLogs.length < dataMap.linesToRead) {
                     try {
                         let result = await chatLogsMaker(socket, chatDtoId, chatLogs)
