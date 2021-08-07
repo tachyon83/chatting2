@@ -15,7 +15,7 @@ app.use(morgan('short'))
 
 app.use(express.json())
 app.set('port', process.env.PORT || 3005);
-app.use(webSettings.sessionRedisMiddleware)
+// app.use(webSettings.sessionRedisMiddleware)
 // app.use(session(webSettings.sessionRedisSettings))
 // app.use(cookieParser()) // cookieParser adds cookies to req.
 // important: this [cors] must come before Router
@@ -38,7 +38,7 @@ require('./controllers/socketioEntry')(io)
 
 app.use((req, res, next) => {
     console.log()
-    console.log('[Current Session ID]:', req.session.id)
+    // console.log('[Current Session ID]:', req.session.id)
     let currTime = new Date();
     let timeStamp = currTime.getHours() + ':' + currTime.getMinutes();
     console.log('[HTTP CALL]:', timeStamp)
@@ -46,7 +46,7 @@ app.use((req, res, next) => {
     console.log('[Cookie]:', req.headers.cookie)
     next()
 })
-app.use('/user', require('./routes/user')(io));
+app.use('/user', webSettings.sessionRedisMiddleware, require('./routes/user')(io));
 
 
 // 404
@@ -69,3 +69,25 @@ app.use(function (err, req, res, next) {
 server.listen(app.get('port'), () => {
     console.log('http://localhost:%d', app.get('port'));
 });
+
+
+const redisClient = require('./config/redisClient')
+const redisHandler = require('./config/redisHandler');
+const dataMap = require('./config/dataMap');
+const { reject } = require('underscore');
+const func = async _ => {
+    let nextRoomId
+    redisClient.get('nextRoomId', (err, v) => {
+        if (err) reject(err)
+        nextRoomId = v
+    })
+    let nextRoomId2 = await redisHandler.get(dataMap.nextRoomId)
+    console.log(nextRoomId, nextRoomId2)
+
+    redisClient.keys('*', (err, v) => {
+        if (err) reject(err)
+        console.log()
+        console.log(v)
+    })
+}
+func()

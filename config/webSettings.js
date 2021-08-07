@@ -8,7 +8,8 @@ module.exports = {
         // secure: true, //https only
         secret: 'secret secretary',
         resave: false,
-        saveUninitialized: false,
+        // saveUninitialized: false,
+        saveUninitialized: true,
         store: new RedisStore({
             client: redisClient,
             ttl: 60 * 60, //time to live in seconds
