@@ -1,4 +1,5 @@
 // const redisClient = require('../config/redisClient')
+const dataMap = require('../config/dataMap');
 const redisHandler = require('../config/redisHandler')
 const errorHandler = require('../utils/errorHandler')
 
@@ -12,7 +13,8 @@ module.exports = io => {
         console.log()
 
         try {
-            let value = await redisHandler.get('sess:' + socket.request.session.id)
+            // let value = await redisHandler.get('sess:' + socket.request.session.id)
+            let value = await redisHandler.hget(dataMap.sessionUserMap, socket.request.session.id)
             if (!value) {
                 err = new Error()
                 err.reason = 'noInfo'

@@ -11,7 +11,6 @@ const passport = require('passport');
 
 module.exports = {
     signIn: (req, res, next) => {
-        console.log('아예 여기도 못들어오겠죠')
         passport.authenticate('local', (err, user, info) => {
             if (err) return next(err);
             if (user) {

@@ -8,8 +8,8 @@ module.exports = {
         // secure: true, //https only
         secret: 'secret secretary',
         resave: false,
-        // saveUninitialized: false,
-        saveUninitialized: true,
+        saveUninitialized: false,
+        // saveUninitialized: true,
         store: new RedisStore({
             client: redisClient,
             ttl: 60 * 60, //time to live in seconds
@@ -31,7 +31,8 @@ module.exports = {
     corsSettings: {
         origin: true,
         credentials: true,
-        preflightContinue: true,
+        // preflightContinue: true,
+        preflightContinue: false,
     },
 
     socketSettings: {
