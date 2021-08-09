@@ -27,6 +27,7 @@ module.exports = {
                         [user.id]: JSON.stringify(user),
                     })
                     console.log('[USER]: Login Successful')
+                    console.log('[USER] session id:', req.session.id)
                     console.log()
                     res.json(responseHandler(true, resCode.success, user.id))
                 })
