@@ -12,18 +12,20 @@ module.exports = io => {
         console.log('[IO Entry]: socket-session.id', socket.request.session.id)
         console.log()
 
-        try {
-            // let value = await redisHandler.get('sess:' + socket.request.session.id)
-            let value = await redisHandler.hget(dataMap.sessionUserMap, socket.request.session.id)
-            if (!value) {
-                err = new Error()
-                err.reason = 'noInfo'
-                socket.emit('system.error', errorHandler(err))
-            } else next()
-        } catch (err) {
-            err.reason = 'dbError'
-            socket.emit('system.error', errorHandler(err))
-        }
+        next()
+
+        // try {
+        //     // let value = await redisHandler.get('sess:' + socket.request.session.id)
+        //     let value = await redisHandler.hget(dataMap.sessionUserMap, socket.request.session.id)
+        //     if (!value) {
+        //         err = new Error()
+        //         err.reason = 'noInfo'
+        //         socket.emit('system.error', errorHandler(err))
+        //     } else next()
+        // } catch (err) {
+        //     err.reason = 'dbError'
+        //     socket.emit('system.error', errorHandler(err))
+        // }
     })
     require('./ioConnection')(io)
 }
