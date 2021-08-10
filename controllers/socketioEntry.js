@@ -17,6 +17,7 @@ module.exports = io => {
         try {
             // let value = await redisHandler.get('sess:' + socket.request.session.id)
             let value = await redisHandler.hget(dataMap.sessionUserMap, socket.request.session.id)
+            console.log('value from sessionUserMap. this should be user name', value)
             if (!value) {
                 err = new Error()
                 err.reason = 'noInfo'
