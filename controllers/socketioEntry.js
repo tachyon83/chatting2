@@ -22,11 +22,12 @@ module.exports = io => {
                 err = new Error()
                 err.reason = 'noInfo'
                 socket.emit('system.error', errorHandler(err))
-            } else next()
+                // } else next()
+            } else require('./ioConnection')(io)
         } catch (err) {
             err.reason = 'dbError'
             socket.emit('system.error', errorHandler(err))
         }
     })
-    require('./ioConnection')(io)
+    // require('./ioConnection')(io)
 }
