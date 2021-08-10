@@ -32,8 +32,9 @@ const io = socketio(server, webSettings.socketSettings);
 io.use((socket, next) => {
     // this is just damn important!
     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
+    require('./controllers/socketioEntry')(io)
 })
-require('./controllers/socketioEntry')(io)
+// require('./controllers/socketioEntry')(io)
 
 
 app.use((req, res, next) => {
