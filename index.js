@@ -35,6 +35,7 @@ const io = socketio(server, webSettings.socketSettings);
 io.use((socket, next) => {
     // this is just damn important!
     console.log('[index]: right before sessionRedisMiddleware')
+    console.log('socket.id in io.use', socket.id)
     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
     // console.log('right after sessionRedisMiddleware', socket.request.session.id)
     // require('./controllers/socketioEntry')(io)
@@ -54,7 +55,7 @@ io.on('connection', async socket => {
     console.log('[index]: Session ID in this Socket:', socket.request.session.id)
     console.log('[index]: Socket ID:', socket.id)
 
-    await sessionToSocket(socket.request.session.id2, socket)
+    await sessionToSocket(socket.request.session.id, socket)
     console.log('finding userId registered in this socket', socket.userId)
 })
 
