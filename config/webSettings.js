@@ -19,8 +19,8 @@ module.exports = {
             // db: 0,
         }),
         cookie: (process.env.NODE_ENV === 'production') ? {
-            httpOnly: true,
-            // httpOnly: false,
+            // httpOnly: true,
+            httpOnly: false,
             // path: corsSettings.origin,
             // sameSite: 'lax',
             sameSite: 'none',
