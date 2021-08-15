@@ -18,16 +18,16 @@ module.exports = {
             // prefix: 'session',
             // db: 0,
         }),
-        // cookie: (process.env.NODE_ENV === 'production') ? {
-        //     // httpOnly: true,
-        //     httpOnly: false,
-        //     // path: corsSettings.origin,
-        //     // sameSite: 'lax',
-        //     sameSite: 'none',
-        //     // secure: true,
-        //     secure: false,
-        //     maxAge: 1000 * 60 * 60, // 1 hour
-        // } : null,
+        cookie: (process.env.NODE_ENV === 'production') ? {
+            // httpOnly: true,
+            httpOnly: false,
+            // path: corsSettings.origin,
+            // sameSite: 'lax',
+            sameSite: 'none',
+            // secure: true,
+            secure: false,
+            maxAge: 2 * 1000 * 60 * 60, // 2 hours
+        } : null,
     }),
 
     corsSettings: {
