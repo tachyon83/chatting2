@@ -29,35 +29,42 @@ const sessionToSocket = require('./utils/sessionToSocket')
 
 const server = http.createServer(app);
 const socketio = require('socket.io');
-// const io = socketio.listen(server, webSettings.socketSettings);
-const io = socketio(server, webSettings.socketSettings);
+// const io = socketio.listen(server, webSettings.socketSettings)
+const io = socketio(server, webSettings.socketSettings)
+let sharedSession = require('express-socket.io-session')
+io.use(sharedSession(webSettings.sessionRedisMiddleware))
+require('./controllers/socketioEntry')(io)
+// io.use((socket, next) => {
+//     console.log(`let's see the session id attached to this socket: ${socket.handshake.session.id}`)
+//     require('./controllers/socketioEntry')(io)
+//     next()
+// })
+// io.use((socket, next) => {
+//     // this is just damn important!
+//     console.log('[index]: right before sessionRedisMiddleware')
+//     console.log('socket.id in io.use', socket.id)
+//     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
+//     // console.log('right after sessionRedisMiddleware', socket.request.session.id)
+//     // require('./controllers/socketioEntry')(io)
+// })
+// // require('./controllers/socketioEntry')(io)
 
-io.use((socket, next) => {
-    // this is just damn important!
-    console.log('[index]: right before sessionRedisMiddleware')
-    console.log('socket.id in io.use', socket.id)
-    webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
-    // console.log('right after sessionRedisMiddleware', socket.request.session.id)
-    // require('./controllers/socketioEntry')(io)
-})
-// require('./controllers/socketioEntry')(io)
+// io.on('connection', async socket => {
 
-io.on('connection', async socket => {
+//     console.log('right after sessionRedisMiddleware', socket.request.session.id)
+//     console.log('[index]: A New Socket Connected!')
+//     // console.log('[index]: Session ID in this Socket:', socket.request.session.id)
+//     // console.log('[IO]: Socket ID:', socket.id)
+//     console.log()
+//     // console.log('[index]: right before sessionRedisMiddleware')
+//     // webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
+//     // console.log('right after sessionRedisMiddleware', socket.request.session.id)
+//     console.log('[index]: Session ID in this Socket:', socket.request.session.id)
+//     console.log('[index]: Socket ID:', socket.id)
 
-    console.log('right after sessionRedisMiddleware', socket.request.session.id)
-    console.log('[index]: A New Socket Connected!')
-    // console.log('[index]: Session ID in this Socket:', socket.request.session.id)
-    // console.log('[IO]: Socket ID:', socket.id)
-    console.log()
-    // console.log('[index]: right before sessionRedisMiddleware')
-    // webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
-    // console.log('right after sessionRedisMiddleware', socket.request.session.id)
-    console.log('[index]: Session ID in this Socket:', socket.request.session.id)
-    console.log('[index]: Socket ID:', socket.id)
-
-    await sessionToSocket(socket.request.session.id, socket)
-    console.log('finding userId registered in this socket', socket.userId)
-})
+//     await sessionToSocket(socket.request.session.id, socket)
+//     console.log('finding userId registered in this socket', socket.userId)
+// })
 
 
 app.use((req, res, next) => {
