@@ -18,7 +18,9 @@ module.exports = {
             // prefix: 'session',
             // db: 0,
         }),
-        // proxy: true,
+
+        // keypoint was this: proxy!
+        proxy: true,
         cookie: (process.env.NODE_ENV === 'production') ? {
             // httpOnly: true,
             httpOnly: false,
