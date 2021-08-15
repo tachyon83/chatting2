@@ -6,7 +6,7 @@ const httpAuth = require('../utils/httpAuth')
 
 
 module.exports = function (io) {
-    router.post('/signin', controller.signIn)
+    router.post('/signin', controller.signIn, controller.uponSignIn)
     // router.get('/signin_dev/:username/:password', signInDevMiddleware, controller.signIn)
     // router.post('/signin_dev/:username/:password', io => {
     //     console.log(io.sockets.sockets)

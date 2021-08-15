@@ -10,6 +10,11 @@ const passport = require('passport');
 
 
 module.exports = {
+    uponSignIn: (req, res) => {
+        console.log('[uponSignIn]: hopefully session data has been stored by now...')
+        res.json(responseHandler(true, resCode.success, req.session.passport.user))
+    },
+
     signIn: (req, res, next) => {
         passport.authenticate('local', (err, user, info) => {
             if (err) return next(err);
@@ -29,7 +34,8 @@ module.exports = {
                     console.log('[USER]: Login Successful')
                     console.log('[USER] session id:', req.session.id)
                     console.log()
-                    res.json(responseHandler(true, resCode.success, user.id))
+                    // res.json(responseHandler(true, resCode.success, user.id))
+                    next()
                 })
 
             } else {
