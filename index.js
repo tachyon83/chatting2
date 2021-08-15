@@ -30,7 +30,7 @@ const socketio = require('socket.io');
 // const io = socketio.listen(server, webSettings.socketSettings)
 const io = socketio(server, webSettings.socketSettings)
 let sharedSession = require('express-socket.io-session')
-io.use(sharedSession(webSettings.sessionRedisMiddleware))
+io.use(sharedSession(webSettings.sessionRedisMiddleware, { autoSave: true }))
 require('./controllers/socketioEntry')(io)
 
 // io.use((socket, next) => {
