@@ -58,10 +58,8 @@ module.exports = () => {
         // passReqToCallback:false,
         passReqToCallback: true,
     }, (req, id, pw, done) => {
-        console.log(id, pw)
         userDao.findById(id, (err, user) => {
             if (err) return done(err, false)
-            console.log(user)
             if (user) {
                 bcrypt.compare(pw, user.password, (err, res) => {
                     if (err) return done(err, false)
