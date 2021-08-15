@@ -16,7 +16,7 @@ app.use(morgan('short'))
 app.use(express.json())
 app.set('port', process.env.PORT || 3005);
 app.use(webSettings.sessionRedisMiddleware)
-// app.use(session(webSettings.sessionRedisSettings))
+
 // app.use(cookieParser()) // cookieParser adds cookies to req.
 // important: this [cors] must come before Router
 app.use(passport.initialize());
@@ -25,8 +25,6 @@ app.use(passport.session());
 app.use(cors(webSettings.corsSettings));
 passportConfig()
 
-const sessionToSocket = require('./utils/sessionToSocket')
-
 const server = http.createServer(app);
 const socketio = require('socket.io');
 // const io = socketio.listen(server, webSettings.socketSettings)
@@ -34,11 +32,7 @@ const io = socketio(server, webSettings.socketSettings)
 let sharedSession = require('express-socket.io-session')
 io.use(sharedSession(webSettings.sessionRedisMiddleware))
 require('./controllers/socketioEntry')(io)
-// io.use((socket, next) => {
-//     console.log(`let's see the session id attached to this socket: ${socket.handshake.session.id}`)
-//     require('./controllers/socketioEntry')(io)
-//     next()
-// })
+
 // io.use((socket, next) => {
 //     // this is just damn important!
 //     console.log('[index]: right before sessionRedisMiddleware')

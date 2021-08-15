@@ -20,10 +20,12 @@ module.exports = {
         }),
         cookie: (process.env.NODE_ENV === 'production') ? {
             httpOnly: true,
+            // httpOnly: false,
             // path: corsSettings.origin,
             // sameSite: 'lax',
             sameSite: 'none',
-            secure: true,
+            // secure: true,
+            secure: false,
             maxAge: 1000 * 60 * 60, // 1 hour
         } : null,
     }),
