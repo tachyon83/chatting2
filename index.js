@@ -3,7 +3,7 @@ const http = require('http');
 const morgan = require('morgan')
 const express = require('express');
 // const session = require('express-session');
-// const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser')
 const passport = require('passport');
 const passportConfig = require('./config/passportConfig');
 // const webSettings = require('./config/webSettings')(session)
@@ -17,7 +17,7 @@ app.use(express.json())
 app.set('port', process.env.PORT || 3005);
 app.use(webSettings.sessionRedisMiddleware)
 
-// app.use(cookieParser()) // cookieParser adds cookies to req.
+app.use(cookieParser()) // cookieParser adds cookies to req.
 // important: this [cors] must come before Router
 app.use(passport.initialize());
 app.use(passport.session());
@@ -39,9 +39,9 @@ require('./controllers/socketioEntry')(io)
 //     console.log('socket.id in io.use', socket.id)
 //     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
 //     // console.log('right after sessionRedisMiddleware', socket.request.session.id)
-//     // require('./controllers/socketioEntry')(io)
+//     require('./controllers/socketioEntry')(io)
 // })
-// // require('./controllers/socketioEntry')(io)
+// require('./controllers/socketioEntry')(io)
 
 // io.on('connection', async socket => {
 

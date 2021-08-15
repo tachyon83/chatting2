@@ -18,14 +18,17 @@ module.exports = {
             // prefix: 'session',
             // db: 0,
         }),
+        proxy: true,
         cookie: (process.env.NODE_ENV === 'production') ? {
             // httpOnly: true,
             httpOnly: false,
             // path: corsSettings.origin,
+
+            // when sameSite:'none', use secure:true then HTTPS!
             // sameSite: 'lax',
             sameSite: 'none',
-            // secure: true,
-            secure: false,
+            secure: true,
+            // secure: false,
             maxAge: 2 * 1000 * 60 * 60, // 2 hours
         } : null,
     }),
@@ -43,5 +46,12 @@ module.exports = {
             credentials: true,
         },
         pingTimeout: 1000 * 60 * 60,
+        transportOptions: {
+            polling: {
+                extraHeaders: {
+                    'Cookie': 'connect.sid',
+                }
+            }
+        }
     },
 }

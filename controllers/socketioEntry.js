@@ -13,6 +13,8 @@ module.exports = io => {
         console.log('[IO Entry]: socket-session.id', socket.handshake.session.id)
         console.log()
 
+        console.log('[cookie]', socket.handshake.cookie)
+
         // next()
 
         try {

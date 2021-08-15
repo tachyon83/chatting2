@@ -12,6 +12,10 @@ const passport = require('passport');
 module.exports = {
     uponSignIn: (req, res) => {
         console.log('[uponSignIn]: hopefully session data has been stored by now...')
+        res.cookie('user', {
+            id: req.session.passport.user,
+            session_id: req.session.id,
+        })
         res.json(responseHandler(true, resCode.success, req.session.passport.user))
     },
 
