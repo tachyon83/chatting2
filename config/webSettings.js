@@ -50,7 +50,10 @@ module.exports = {
             origin: true,
             credentials: true,
         },
-        pingTimeout: 1000 * 60 * 60,
+        pingTimeout: 1000 * 60,
+        // pingTimeout: 1000 * 60 * 60,
+
+        // below is not needed
         // transportOptions: {
         //     polling: {
         //         extraHeaders: {
