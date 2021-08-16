@@ -22,20 +22,20 @@ module.exports = {
         // keypoint was this: proxy!
         proxy: true,
 
-        // cookie: (process.env.NODE_ENV === 'production') ? {
-        //     // httpOnly: true,
-        //     httpOnly: false,
-        //     // path: corsSettings.origin,
+        cookie: (process.env.NODE_ENV === 'production') ? {
+            // httpOnly: true,
+            httpOnly: false,
+            // path: corsSettings.origin,
 
-        //     // when sameSite:'none', use secure:true then HTTPS!
-        //     // when lax, cross-site cookie is not gonna be sent.
-        //     // when lax, only same site cookies are allowed.
-        //     // sameSite: 'lax',
-        //     sameSite: 'none',
-        //     secure: true,
-        //     // secure: false,
-        //     maxAge: 2 * 1000 * 60 * 60, // 2 hours
-        // } : null,
+            // when sameSite:'none', use secure:true then HTTPS!
+            // when lax, cross-site cookie is not gonna be sent.
+            // when lax, only same site cookies are allowed.
+            // sameSite: 'lax',
+            sameSite: 'none',
+            secure: true,
+            // secure: false,
+            maxAge: 2 * 1000 * 60 * 60, // 2 hours
+        } : null,
     }),
 
     corsSettings: {
