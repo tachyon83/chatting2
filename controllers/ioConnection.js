@@ -63,15 +63,15 @@ module.exports = io => {
         let room
 
         console.log('[IO]: A New Socket Connected!')
-        // console.log('[IO]: Session ID in this Socket:', socket.request.session.id)
-        console.log('[IO]: Session ID in this Socket:', socket.handshake.session.id)
+        console.log('[IO]: Session ID in this Socket:', socket.request.session.id)
+        // console.log('[IO]: Session ID in this Socket:', socket.handshake.session.id)
         console.log('[IO]: Socket ID:', socket.id)
         console.log()
 
         // 아래 과정에서 에러 발생시, 중단 처리 관련하여 고민 필요
         try {
-            // await sessionToSocket(socket.request.session.id, socket)
-            await sessionToSocket(socket.handshake.session.id, socket)
+            await sessionToSocket(socket.request.session.id, socket)
+            // await sessionToSocket(socket.handshake.session.id, socket)
             room = new roomController(socket, io)
             console.log('[IO]: Now Joining Lobby...')
             console.log()
@@ -136,15 +136,15 @@ module.exports = io => {
                         console.log()
 
                         try {
-                            // redisHandler.hdel(dataMap.sessionUserMap, socket.request.session.id)
-                            redisHandler.hdel(dataMap.sessionUserMap, socket.handshake.session.id)
+                            redisHandler.hdel(dataMap.sessionUserMap, socket.request.session.id)
+                            // redisHandler.hdel(dataMap.sessionUserMap, socket.handshake.session.id)
                             redisHandler.hdel(dataMap.onlineUserHm, socket.userId)
 
                             // socket automatically leaves all the rooms it was in when disconnected?
                             // so, the socket does not have to manually leaves its group room?
                             socket.request.logOut()
-                            // socket.request.session.destroy(async err => {
-                            socket.handshake.session.destroy(async err => {
+                            socket.request.session.destroy(async err => {
+                                // socket.handshake.session.destroy(async err => {
                                 if (err) return socket.emit('system.error', errorHandler(err))
                                 console.log('[IO]:', socket.userId + ' has successfully signed out/disconnected.')
                                 console.log()

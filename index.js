@@ -3,7 +3,7 @@ const http = require('http');
 const morgan = require('morgan')
 const express = require('express');
 // const session = require('express-session');
-const cookieParser = require('cookie-parser')
+// const cookieParser = require('cookie-parser')
 const passport = require('passport');
 const passportConfig = require('./config/passportConfig');
 // const webSettings = require('./config/webSettings')(session)
@@ -29,19 +29,23 @@ const server = http.createServer(app);
 const socketio = require('socket.io');
 // const io = socketio.listen(server, webSettings.socketSettings)
 const io = socketio(server, webSettings.socketSettings)
-let sharedSession = require('express-socket.io-session')
-io.use(sharedSession(webSettings.sessionRedisMiddleware, { autoSave: true }))
-require('./controllers/socketioEntry')(io)
-
-// io.use((socket, next) => {
-//     // this is just damn important!
-//     console.log('[index]: right before sessionRedisMiddleware')
-//     console.log('socket.id in io.use', socket.id)
-//     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
-//     // console.log('right after sessionRedisMiddleware', socket.request.session.id)
-//     require('./controllers/socketioEntry')(io)
-// })
+// let sharedSession = require('express-socket.io-session')
+// io.use(sharedSession(webSettings.sessionRedisMiddleware, { autoSave: true }))
 // require('./controllers/socketioEntry')(io)
+
+io.use((socket, next) => {
+    // this is just damn important!
+    console.log('[index]: right before sessionRedisMiddleware')
+    console.log('socket.id in io.use', socket.id)
+    webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
+    // console.log('right after sessionRedisMiddleware', socket.request.session.id)
+    // require('./controllers/socketioEntry')(io)
+})
+// require('./controllers/socketioEntry')(io)
+io.use((socket, next) => {
+    require('./controllers/socketioEntry')(io)
+    next()
+})
 
 // io.on('connection', async socket => {
 

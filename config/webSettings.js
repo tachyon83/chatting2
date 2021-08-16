@@ -27,6 +27,8 @@ module.exports = {
             // path: corsSettings.origin,
 
             // when sameSite:'none', use secure:true then HTTPS!
+            // when lax, cross-site cookie is not gonna be sent.
+            // when lax, only same site cookies are allowed.
             // sameSite: 'lax',
             sameSite: 'none',
             secure: true,
