@@ -29,21 +29,21 @@ const server = http.createServer(app);
 const socketio = require('socket.io');
 // const io = socketio.listen(server, webSettings.socketSettings)
 const io = socketio(server, webSettings.socketSettings)
-// let sharedSession = require('express-socket.io-session')
-// io.use(sharedSession(webSettings.sessionRedisMiddleware, { autoSave: true }))
-// require('./controllers/socketioEntry')(io)
+let sharedSession = require('express-socket.io-session')
+io.use(sharedSession(webSettings.sessionRedisMiddleware, { autoSave: true }))
+require('./controllers/socketioEntry')(io)
 
-io.use((socket, next) => {
-    // this is just damn important!
-    console.log('[index]: right before sessionRedisMiddleware')
-    console.log('socket.id in io.use', socket.id)
-    // webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
-    webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {})
-    require('./controllers/socketioEntry')(io)
-    next()
-    // console.log('right after sessionRedisMiddleware', socket.request.session.id)
-    // require('./controllers/socketioEntry')(io)
-})
+// io.use((socket, next) => {
+//     // this is just damn important!
+//     console.log('[index]: right before sessionRedisMiddleware')
+//     console.log('socket.id in io.use', socket.id)
+//     // webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
+//     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {})
+//     require('./controllers/socketioEntry')(io)
+//     next()
+//     // console.log('right after sessionRedisMiddleware', socket.request.session.id)
+//     // require('./controllers/socketioEntry')(io)
+// })
 // require('./controllers/socketioEntry')(io)
 
 // io.use((socket, next) => {
