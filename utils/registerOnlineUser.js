@@ -21,7 +21,7 @@ module.exports = socket => {
             user.socketId = socket.id
             socket.groupId = user.groupId
             redisHandler.hmset(dataMap.onlineUserHm, {
-                [userId]: JSON.stringify(user)
+                [socket.userId]: JSON.stringify(user)
             })
             console.log('[SessionToSocket]: Complete.')
             console.log()
