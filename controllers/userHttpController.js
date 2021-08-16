@@ -33,7 +33,7 @@ module.exports = {
                     //     [req.session.id]: user.id,
                     // })
                     delete user.password
-                    if (await redisHandler.hget(dataMap.onlineUserHm, user.id)) res.json(responseHandler(false, resCode.online, null))
+                    if (await redisHandler.hget(dataMap.onlineUserHm, user.id)) return res.json(responseHandler(false, resCode.online, null))
                     redisHandler.hmset(dataMap.onlineUserHm, {
                         [user.id]: JSON.stringify(user),
                     })
