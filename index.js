@@ -37,15 +37,19 @@ io.use((socket, next) => {
     // this is just damn important!
     console.log('[index]: right before sessionRedisMiddleware')
     console.log('socket.id in io.use', socket.id)
-    webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
+    // webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
+    webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {})
+    require('./controllers/socketioEntry')(io)
+    next()
     // console.log('right after sessionRedisMiddleware', socket.request.session.id)
     // require('./controllers/socketioEntry')(io)
 })
 // require('./controllers/socketioEntry')(io)
-io.use((socket, next) => {
-    require('./controllers/socketioEntry')(io)
-    next()
-})
+
+// io.use((socket, next) => {
+//     require('./controllers/socketioEntry')(io)
+//     next()
+// })
 
 // io.on('connection', async socket => {
 
