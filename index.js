@@ -17,7 +17,7 @@ app.use(express.json())
 app.set('port', process.env.PORT || 3005);
 app.use(webSettings.sessionRedisMiddleware)
 
-app.use(cookieParser()) // cookieParser adds cookies to req.
+// app.use(cookieParser()) // cookieParser adds cookies to req.
 // important: this [cors] must come before Router
 app.use(passport.initialize());
 app.use(passport.session());
