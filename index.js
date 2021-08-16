@@ -46,6 +46,17 @@ require('./controllers/socketioEntry')(io)
 // })
 // require('./controllers/socketioEntry')(io)
 
+// const session=require('express-session')
+// const sessionMiddleware=session({
+//     secret:'secret',
+//     resave:false,
+//     saveUninitialized:true,
+//     store:...,
+// })
+// const socketio = require('socket.io');
+// const io = socketio(server, socketSetting)
+// io.use((socket,next)=>)
+
 // io.use((socket, next) => {
 //     require('./controllers/socketioEntry')(io)
 //     next()

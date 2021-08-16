@@ -8,8 +8,8 @@ module.exports = {
         // secure: true, //https only
         secret: 'secret secretary',
         resave: false,
-        // saveUninitialized: false,
-        saveUninitialized: true,
+        saveUninitialized: false,
+        // saveUninitialized: true,
         store: new RedisStore({
             client: redisClient,
             ttl: 60 * 60, //time to live in seconds
@@ -21,20 +21,21 @@ module.exports = {
 
         // keypoint was this: proxy!
         proxy: true,
-        cookie: (process.env.NODE_ENV === 'production') ? {
-            // httpOnly: true,
-            httpOnly: false,
-            // path: corsSettings.origin,
 
-            // when sameSite:'none', use secure:true then HTTPS!
-            // when lax, cross-site cookie is not gonna be sent.
-            // when lax, only same site cookies are allowed.
-            // sameSite: 'lax',
-            sameSite: 'none',
-            secure: true,
-            // secure: false,
-            maxAge: 2 * 1000 * 60 * 60, // 2 hours
-        } : null,
+        // cookie: (process.env.NODE_ENV === 'production') ? {
+        //     // httpOnly: true,
+        //     httpOnly: false,
+        //     // path: corsSettings.origin,
+
+        //     // when sameSite:'none', use secure:true then HTTPS!
+        //     // when lax, cross-site cookie is not gonna be sent.
+        //     // when lax, only same site cookies are allowed.
+        //     // sameSite: 'lax',
+        //     sameSite: 'none',
+        //     secure: true,
+        //     // secure: false,
+        //     maxAge: 2 * 1000 * 60 * 60, // 2 hours
+        // } : null,
     }),
 
     corsSettings: {
@@ -50,12 +51,12 @@ module.exports = {
             credentials: true,
         },
         pingTimeout: 1000 * 60 * 60,
-        transportOptions: {
-            polling: {
-                extraHeaders: {
-                    'Cookie': 'connect.sid',
-                }
-            }
-        }
+        // transportOptions: {
+        //     polling: {
+        //         extraHeaders: {
+        //             'Cookie': 'connect.sid',
+        //         }
+        //     }
+        // }
     },
 }
