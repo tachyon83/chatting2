@@ -10,12 +10,13 @@ const dataMap = require('../config/dataMap')
     this socket will not join lobby and its group here.
 */
 
-module.exports = (sessionId, socket) => {
+module.exports = socket => {
     return new Promise(async (resolve, reject) => {
         try {
-            let userId = await redisHandler.hget(dataMap.sessionUserMap, sessionId)
-            socket.userId = userId
-            let user = await redisHandler.hget(dataMap.onlineUserHm, userId)
+            // let userId = await redisHandler.hget(dataMap.sessionUserMap, sessionId)
+            // socket.userId = userId
+            socket.userId = socket.request.session.passport.user
+            let user = await redisHandler.hget(dataMap.onlineUserHm, socket.userId)
             user = JSON.parse(user)
             user.socketId = socket.id
             socket.groupId = user.groupId

@@ -28,9 +28,9 @@ module.exports = {
                 req.logIn(user, (err) => {
                     if (err) return next(err)
 
-                    redisHandler.hmset(dataMap.sessionUserMap, {
-                        [req.session.id]: user.id,
-                    })
+                    // redisHandler.hmset(dataMap.sessionUserMap, {
+                    //     [req.session.id]: user.id,
+                    // })
                     delete user.password
                     redisHandler.hmset(dataMap.onlineUserHm, {
                         [user.id]: JSON.stringify(user),

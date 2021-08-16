@@ -11,11 +11,17 @@ const webSettings = require('./config/webSettings')
 const errorHandler = require('./utils/errorHandler')
 const cors = require('cors');
 const app = express();
+const server = http.createServer(app);
+const socketio = require('socket.io');
+const io = socketio(server, webSettings.socketSettings)
+const wrap = middleware => (socket, next) => middleware(socket.request, {}, next)
+
 app.use(morgan('short'))
 
 app.use(express.json())
 app.set('port', process.env.PORT || 3005);
 app.use(webSettings.sessionRedisMiddleware)
+io.use(wrap(webSettings.sessionRedisMiddleware))
 
 // app.use(cookieParser()) // cookieParser adds cookies to req.
 // important: this [cors] must come before Router
@@ -25,12 +31,13 @@ app.use(passport.session());
 app.use(cors(webSettings.corsSettings));
 passportConfig()
 
-const server = http.createServer(app);
-const socketio = require('socket.io');
+// const server = http.createServer(app);
+// const socketio = require('socket.io');
 // const io = socketio.listen(server, webSettings.socketSettings)
-const io = socketio(server, webSettings.socketSettings)
-let sharedSession = require('express-socket.io-session')
-io.use(sharedSession(webSettings.sessionRedisMiddleware, { autoSave: true }))
+// const io = socketio(server, webSettings.socketSettings)
+// let sharedSession = require('express-socket.io-session')
+// io.use(sharedSession(webSettings.sessionRedisMiddleware, { autoSave: true }))
+
 require('./controllers/socketioEntry')(io)
 
 // io.use((socket, next) => {
@@ -41,48 +48,10 @@ require('./controllers/socketioEntry')(io)
 //     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {})
 //     require('./controllers/socketioEntry')(io)
 //     next()
-//     // console.log('right after sessionRedisMiddleware', socket.request.session.id)
-//     // require('./controllers/socketioEntry')(io)
 // })
-// require('./controllers/socketioEntry')(io)
-
-// const session=require('express-session')
-// const sessionMiddleware=session({
-//     secret:'secret',
-//     resave:false,
-//     saveUninitialized:true,
-//     store:...,
-// })
-// const socketio = require('socket.io');
-// const io = socketio(server, socketSetting)
-// io.use((socket,next)=>)
-
-// io.use((socket, next) => {
-//     require('./controllers/socketioEntry')(io)
-//     next()
-// })
-
-// io.on('connection', async socket => {
-
-//     console.log('right after sessionRedisMiddleware', socket.request.session.id)
-//     console.log('[index]: A New Socket Connected!')
-//     // console.log('[index]: Session ID in this Socket:', socket.request.session.id)
-//     // console.log('[IO]: Socket ID:', socket.id)
-//     console.log()
-//     // console.log('[index]: right before sessionRedisMiddleware')
-//     // webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
-//     // console.log('right after sessionRedisMiddleware', socket.request.session.id)
-//     console.log('[index]: Session ID in this Socket:', socket.request.session.id)
-//     console.log('[index]: Socket ID:', socket.id)
-
-//     await sessionToSocket(socket.request.session.id, socket)
-//     console.log('finding userId registered in this socket', socket.userId)
-// })
-
 
 app.use((req, res, next) => {
     console.log()
-    // console.log('[Current Session ID]:', req.session.id)
     let currTime = new Date();
     let timeStamp = currTime.getHours() + ':' + currTime.getMinutes();
     console.log('[HTTP CALL]:', timeStamp)
@@ -91,7 +60,6 @@ app.use((req, res, next) => {
     console.log('[Session_ID]:', req.session ? req.session.id : 'no session yet')
     next()
 })
-// app.use('/user', webSettings.sessionRedisMiddleware, require('./routes/user')(io));
 app.use('/user', require('./routes/user')(io));
 
 
