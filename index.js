@@ -6,10 +6,10 @@ const express = require('express');
 // const cookieParser = require('cookie-parser')
 const passport = require('passport');
 const passportConfig = require('./config/passportConfig');
-// const webSettings = require('./config/webSettings')(session)
 const webSettings = require('./config/webSettings')
 const errorHandler = require('./utils/errorHandler')
 const cors = require('cors');
+
 const app = express();
 const server = http.createServer(app);
 const socketio = require('socket.io');
@@ -17,13 +17,13 @@ const io = socketio(server, webSettings.socketSettings)
 const wrap = middleware => (socket, next) => middleware(socket.request, {}, next)
 
 app.use(morgan('short'))
-
 app.use(express.json())
 app.set('port', process.env.PORT || 3005);
+
 app.use(webSettings.sessionRedisMiddleware)
 io.use(wrap(webSettings.sessionRedisMiddleware))
-
 // app.use(cookieParser()) // cookieParser adds cookies to req.
+
 // important: this [cors] must come before Router
 app.use(passport.initialize());
 app.use(passport.session());
@@ -41,22 +41,18 @@ passportConfig()
 require('./controllers/socketioEntry')(io)
 
 // io.use((socket, next) => {
-//     // this is just damn important!
-//     console.log('[index]: right before sessionRedisMiddleware')
-//     console.log('socket.id in io.use', socket.id)
-//     // webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {}, next);
-//     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {})
 //     require('./controllers/socketioEntry')(io)
-//     next()
+//     // this is just damn important!
+//     webSettings.sessionRedisMiddleware(socket.request, socket.request.res || {})
 // })
 
 app.use((req, res, next) => {
     console.log()
     let currTime = new Date();
     let timeStamp = currTime.getHours() + ':' + currTime.getMinutes();
-    console.log('[HTTP CALL]:', timeStamp)
+    console.log('[HTTP timestamp]:', timeStamp)
     // console.log('req.cookies', req.cookies)
-    console.log('[Cookie]:', req.headers.cookie)
+    console.log('[Cookie in headers]:', req.headers.cookie)
     console.log('[Session_ID]:', req.session ? req.session.id : 'no session yet')
     next()
 })

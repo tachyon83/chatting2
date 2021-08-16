@@ -26,13 +26,14 @@ module.exports = {
             if (user) {
                 // when using custom callback, need to use req.logIn()
 
-                req.logIn(user, (err) => {
+                req.logIn(user, async (err) => {
                     if (err) return next(err)
 
                     // redisHandler.hmset(dataMap.sessionUserMap, {
                     //     [req.session.id]: user.id,
                     // })
                     delete user.password
+                    if (await redisHandler.hget(dataMap.onlineUserHm, user.id)) res.json(responseHandler(false, resCode.online, null))
                     redisHandler.hmset(dataMap.onlineUserHm, {
                         [user.id]: JSON.stringify(user),
                     })

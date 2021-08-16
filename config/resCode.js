@@ -8,4 +8,5 @@ module.exports = {
     dbError: 6,
     noPage: 7,
     noSpace: 8,
+    online: 9,
 }
