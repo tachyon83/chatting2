@@ -11,6 +11,7 @@ const passport = require('passport');
 
 module.exports = {
     uponSignIn: (req, res) => {
+        console.log(`[uponSignIn]: welcome ${req.user}!`)
         console.log('[uponSignIn]: hopefully session data has been stored by now...')
         // res.cookie('user', {
         //     id: req.session.passport.user,

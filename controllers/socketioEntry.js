@@ -14,7 +14,7 @@ module.exports = io => {
         console.log()
 
         if (socket.request.session.passport.user) {
-            require('./ioConnection')(io)
+            // require('./ioConnection')(io)
             next()
         } else {
             err.reason = 'dbError'
@@ -40,5 +40,5 @@ module.exports = io => {
         //     socket.emit('system.error', errorHandler(err))
         // }
     })
-    // require('./ioConnection')(io)
+    require('./ioConnection')(io)
 }
