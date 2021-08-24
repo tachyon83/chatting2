@@ -10,9 +10,9 @@ const dataMap = require('../config/dataMap')
 const chatLogsMaker = (socket, chatDtoId) => {
     return new Promise(async (resolve, reject) => {
         try {
-            let chatDto = await redisHandler.lindex(socket.pos + 'chat', chatDtoId - 1)
+            let chatDto = await redisHandler.lindex(socket.pos + 'chat', chatDtoId)
             chatDto = JSON.parse(chatDto)
-            if (chatDto.from === socket.userId || chatDto.to === socket.userId || (socket.groupId && socket.groupId === chatDto.to)) resolve(chatDto)
+            if (!chatDto.to || chatDto.from === socket.userId || chatDto.to === socket.userId || (socket.groupId && socket.groupId === chatDto.to)) resolve(chatDto)
             else resolve(null)
 
         } catch (err) {
@@ -54,22 +54,25 @@ module.exports = {
                 let len = parseInt(await redisHandler.llen(socket.pos + 'chat'))
                 let chatLogs = []
                 if (!len) return resolve(chatLogs)
-                if(!chatDtoId)chatDtoId=len-1
-                while (chatDtoId > 0 && chatLogs.length < dataMap.linesToRead) {
+                if (!chatDtoId) chatDtoId = len - 1
+                else chatDtoId--
+                while (chatDtoId >= 0 && chatLogs.length < dataMap.linesToRead) {
                     try {
+                        console.log('before chatLogsMaker', chatDtoId)
                         let result = await chatLogsMaker(socket, chatDtoId, chatLogs)
+                        console.log('after chatLogsMaker', result)
                         if (result) {
                             chatDtoId = result.id
                             chatLogs.push(result)
-                        } else {
-                            chatDtoId--
                         }
+                        chatDtoId--
                     } catch (err) {
                         return reject(err)
                     }
                 }
                 console.log(`[chatController]: Now Sending old chatLogs earlier than chatDtoId(${chatDtoId}) to Socket(${socket.userId}).`)
                 console.log()
+                console.log(chatLogs)
                 resolve(chatLogs)
             } catch (err) {
                 err.reason = 'error'
