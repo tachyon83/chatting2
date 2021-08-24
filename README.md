@@ -19,7 +19,8 @@ https://github.com/danakim21
 
 본 Readme에는 백엔드 코드와 관련된 내용만 담겨있습니다.   
 백엔드: https://github.com/tachyon83/chatting2   
-배포사이트(프론트엔드): https://chitchat-chitchat.herokuapp.com/   
+프론트엔드: https://github.com/danakim21/messaging-app   
+배포사이트: https://chitchat-chitchat.herokuapp.com/   
    
      
         
