@@ -58,9 +58,7 @@ module.exports = {
                 else chatDtoId--
                 while (chatDtoId >= 0 && chatLogs.length < dataMap.linesToRead) {
                     try {
-                        console.log('before chatLogsMaker', chatDtoId)
                         let result = await chatLogsMaker(socket, chatDtoId, chatLogs)
-                        console.log('after chatLogsMaker', result)
                         if (result) {
                             chatDtoId = result.id
                             chatLogs.push(result)

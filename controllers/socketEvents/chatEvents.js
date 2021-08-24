@@ -19,8 +19,8 @@ module.exports = (socket, io) => {
                     console.log(`[chatEvents]: socket(${socket.userId}) is sending a chatDto(${chatDto.text}) to everyone in his/her room.`)
                     console.log()
                     // socket.to(socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto))
-                    console.log('sockets in a room', io.sockets.adapter.rooms.get(socket.pos))
-                    console.log('function?', io.in(socket.pos).emit)
+                    console.log('sockets in this room', io.sockets.adapter.rooms.get(socket.pos))
+                    // console.log('function?', io.in(socket.pos).emit)
                     io.in(socket.pos).emit('chat.in', responseHandler(true, resCode.success, chatDto))
                 }
                 // "로그인시에 group가입여부 확인후 group등의 키워드로 시작하는 방에 소켓 join"
@@ -53,7 +53,7 @@ module.exports = (socket, io) => {
     // })
 
     // chat id가 프론트에서 보일 경우, 몇번의 그룹채팅과 귓속말이 있었는지 노출됨...
-    socket.on('chat.read', (chatDtoId,cb) => {
+    socket.on('chat.read', (chatDtoId, cb) => {
         chat.read(socket, chatDtoId)
             .then(resultArr => cb(responseHandler(true, resCode.success, resultArr)))
             // .catch(err => cb(errorHandler(err)))

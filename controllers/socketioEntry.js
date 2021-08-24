@@ -1,6 +1,6 @@
 // const redisClient = require('../config/redisClient')
-const dataMap = require('../config/dataMap');
-const redisHandler = require('../config/redisHandler')
+// const dataMap = require('../config/dataMap');
+// const redisHandler = require('../config/redisHandler')
 const errorHandler = require('../utils/errorHandler')
 
 module.exports = io => {
