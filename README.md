@@ -4,8 +4,7 @@
    
 ## 소개
   
-본 프로젝트는 2인 규모의 미니프로젝트이며,   
-3인이 수행하였습니다.   
+본 프로젝트는 2인 미니프로젝트이며,   
 처음에는 ramgabi님과 함께하다가 그 분이 개인사정으로 빠지시고,   
 Danakim21님이 대신하여 프론트를 이어받아 진행하였습니다.   
    
@@ -13,7 +12,7 @@ Danakim21님이 대신하여 프론트를 이어받아 진행하였습니다.
 https://www.notion.so/Chatting-Web-Mini-Project-b2105f72f1a543779e018ca617f27bd9   
     
 백엔드는 제가 맡았고,  
-프론트엔드는 ramgabi님과 danakim21님이 맡았습니다.  
+프론트엔드는 (ramgabi님과) danakim21님이 맡았습니다.  
 https://github.com/ramgabi   
 https://github.com/danakim21    
 
