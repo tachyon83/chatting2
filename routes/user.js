@@ -8,6 +8,7 @@ const errorHandler = require('../utils/errorHandler')
 
 const sessionCheckMiddleware = async (req, res, next) => {
     const existingSession = await redisHandler.get(`sess:${req.session.id}`)
+    console.log(existingSession)
     if (existingSession) {
         let err = new Error()
         err.reason = 'online'
